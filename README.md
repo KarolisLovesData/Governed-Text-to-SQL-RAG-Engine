@@ -7,11 +7,8 @@
 ![Dataform](https://img.shields.io/badge/Dataform-Governance_Guardrails-4285F4.svg?logo=googlecloud&logoColor=white)
 ![Gemini AI](https://img.shields.io/badge/AI-Gemini_3.7_Flash-8E75B2.svg?logo=google-gemini&logoColor=white)
 
-## 📊 Executive Summary
-**APEX Activewear** is a simulated $48.85M e-commerce dataset powered by a BigQuery and Cloud Dataform Medallion architecture. While the pipeline successfully processes over 436K+ orders, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL.
-
-## ⚠️ The Business Problem: Hallucinated Analytics
-To enable self-service, stakeholders attempted to use out-of-the-box LLMs to query the data warehouse. However, raw models inherently **hallucinate business logic**. They blindly queried uncertified staging tables, ignored complex financial definitions (like filtering out our 24% return rate), and missed critical "Ghost Revenue" filters, resulting in mathematically incorrect metrics.
+## ⚠️ Context & Business Problem: Hallucinated Analytics
+**APEX Activewear** is a $48.85M e-commerce enterprise powered by a BigQuery and Cloud Dataform Medallion architecture. While the pipeline successfully processes over 436K+ orders, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL. To enable self-service, stakeholders attempted using out-of-the-box LLMs to query the warehouse directly. However, raw models inherently **hallucinate business logic**—blindly querying uncertified staging tables, ignoring complex financial definitions (like filtering out our 24% return rate), and missing critical "Ghost Revenue" filters, resulting in mathematically incorrect metrics.
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL. 
