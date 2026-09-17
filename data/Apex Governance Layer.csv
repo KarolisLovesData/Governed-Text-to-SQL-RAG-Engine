@@ -1,0 +1,79 @@
+dataset_name,asset_name,asset_type,governance_logic
+dataform_assertions,assert_revenue_status_consistency,Assertion Logic,"SELECT
+  order_id,
+  status,
+  is_realized_revenue
+FROM
+  `apex-activewear.silver_layer.stg_order_items`
+WHERE
+  is_realized_revenue = TRUE
+  AND status NOT IN ('Complete',
+    'Shipped',
+    'Processing')"
+dataform_assertions,assert_logistical_timeline,Assertion Logic,"SELECT
+  order_id,
+  created_at,
+  shipped_at,
+  delivered_at,
+  returned_at
+FROM
+  `apex-activewear.apex_activewear_bronze.order_items`
+WHERE
+  (shipped_at IS NOT NULL
+    AND shipped_at < created_at)
+  OR (delivered_at IS NOT NULL
+    AND delivered_at < shipped_at)"
+dataform_assertions,assert_direct_traffic_anomaly,Assertion Logic,"WITH source_revenue AS (
+  SELECT
+    map.traffic_source,
+    SUM(oi.sale_price) AS total_revenue
+  FROM 
+    `apex-activewear.silver_layer.stg_order_items` AS oi
+  JOIN 
+    `apex-activewear.silver_layer.int_order_attribution` AS map
+    ON oi.order_id = map.order_id
+  GROUP BY 1
+),
+share_calc AS (
+  SELECT
+    traffic_source,
+    100.0 * total_revenue / SUM(total_revenue) OVER() AS share_pct
+  FROM 
+    source_revenue
+)
+
+SELECT * FROM share_calc 
+WHERE traffic_source = 'Direct' AND share_pct > 20"
+dataform_assertions,assert_no_events_before_registration,Assertion Logic,"SELECT
+  oe.user_id,
+  ur.created_at AS user_signup,
+  oe.created_at AS event_time
+FROM
+  `apex-activewear.silver_layer.stg_users` AS ur
+JOIN
+  `apex-activewear.silver_layer.stg_online_events` AS oe
+USING
+  (user_id)
+WHERE
+  oe.created_at < ur.created_at"
+dataform_assertions,assert_stg_order_items_pricing,Assertion Logic,"SELECT
+  order_id,
+  sale_price
+FROM
+  `apex-activewear.silver_layer.stg_order_items`
+WHERE
+  sale_price < 0
+  OR sale_price IS NULL"
+silver_layer,stg_online_events,Table Description,"""Cleaned clickstream events with standardized traffic sources"""
+silver_layer,int_order_attribution,Table Description,"""Resolves order attribution and flags logistical timeline anomalies."""
+silver_layer,stg_users,Table Description,"""Cleaned user demographics"""
+silver_layer,stg_order_items,Table Description,"""Cleaned order items with NULL handling and business status flags"""
+silver_layer,stg_orders,Table Description,"""Order-level base table with centralized status flags"""
+gold_layer,mart_ltv_cohorts,Table Description,"""LTV and Revenue performance by customer signup cohort - Strict Original Logic"""
+gold_layer,mart_global_fulfillment,Table Description,"""Global fulfillment SLAs, highlighting warehouse drag and projected optimization."""
+gold_layer,mart_cohort_retention,Table Description,"""Standard Monthly Cohort Retention (Month 0-12)"""
+gold_layer,mart_dc_fulfillment,Table Description,"""Distribution center performance scorecard tracking volume share and latency SLAs."""
+gold_layer,mart_product_leakage,Table Description,"""Product Category Leakage Analysis: Revenue vs. Returns and Cancellations"""
+gold_layer,mart_segmented_retention,Table Description,"""Segmented Retention: High Value vs Low Value Curve"""
+gold_layer,mart_rfm_segments,Table Description,"""Customer RFM segments - Strict Original Logic"""
+gold_layer,mart_ltv_12m_segmentation,Table Description,"""LTV Prediction: Strict 12-Month Revenue matching original insights"""
