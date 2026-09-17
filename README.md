@@ -15,9 +15,8 @@ To enable self-service, stakeholders attempted using out-of-the-box LLMs to quer
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL. 
 
- <img src="Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
- Hybrid_Search_Architecture.jpeg
- 
+ <img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
+
 **Key Technical Implementations:**
 * **Native BigQuery Hybrid Search:** Pushed the search workload directly into the warehouse, utilizing BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching) fused via Reciprocal Rank Fusion (RRF).
 * **Strict Governance Guardrails:** Dynamically parses BigQuery `INFORMATION_SCHEMA` and Dataform assertions, restricting the AI exclusively to certified `gold_layer` tables.
