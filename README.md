@@ -1,4 +1,5 @@
 # Governed-Text-to-SQL-Agent-for-APEX-Activewear
+ 🤖 **Governed AI Serving** (RAG Text-to-SQL via `Python`, `Google GenAI SDK`, & `JSON Semantic Layer`)
 
 ### <a id="ai-governance"></a>III. AI-Powered Semantic Layer & BI Governance
 
