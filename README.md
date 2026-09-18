@@ -34,9 +34,6 @@ LLM-generated SQL poses financial risks if it queries unoptimized datasets. This
 **User Prompt:**
 > *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
 
-### 🔍 System Action
-#### *A sample governed query:*
-
 <img src="visuals/app_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">[cite: 2]
 
 <details>
@@ -69,7 +66,9 @@ SELECT
 FROM user_order_stats uos
 JOIN churn_filtered_users cfu ON uos.user_id = cfu.user_id
 GROUP BY uos.country
-ORDER BY total_spend DESC;
+ORDER BY total_spend DESC;```
+</details>
+
 
 ### 📈 Sample 2: Advanced Metric Derivation (Window Functions)
 Translates raw business requests into advanced period-over-period `LAG()` window math, enforcing complex analytical logic without requiring explicit prompt engineering.
