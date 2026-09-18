@@ -39,7 +39,7 @@ LLM-generated SQL poses financial risks if it queries unoptimized datasets. This
 <details>
 <summary><b>🔍 View Validated Governed SQL</b></summary>
 
-```sql
+sql
 WITH user_order_stats AS (
   SELECT
     oi.user_id,
