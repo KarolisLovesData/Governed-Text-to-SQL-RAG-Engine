@@ -27,10 +27,46 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 ---
 
 ### 🔍 System Action
+
+### 🛡️ Sample 1: Proactive Cost Control & Pre-Execution Validation
+LLM-generated SQL poses financial risks if it queries unoptimized datasets. This engine intercepts the generated query and runs a $0 BigQuery dry-run to validate syntax and estimate compute costs *before* execution.
+
+**User Prompt:**
+> *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
+
+### 🔍 System Action
 #### *A sample governed query:*
 
-<img src="visuals/app_in_action_01.png" alt="RAG CLI Demo" width="900">
+<img src="visuals/app_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">
 
-#### *Ground Truth Verification: Executing the Governed Query in BigQuery*
+<details>
+<summary><b>🔍 View Validated Governed SQL</b></summary>
 
-<img src="visuals/bigquery_governance_validation.png" alt="BigQuery Execution Verification" width="800">
+```sql
+WITH user_order_stats AS (
+  SELECT
+    oi.user_id,
+    u.country,
+    COUNT(DISTINCT oi.order_id) AS total_orders_2024,
+    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_spend_2024,
+    SUM(CAST(oi.sale_price AS NUMERIC)) / NULLIF(COUNT(DISTINCT oi.order_id), 0) AS average_order_value_2024
+  FROM `apex-activewear.silver_layer.stg_order_items` AS oi
+  JOIN `apex-activewear.silver_layer.stg_users` AS u ON oi.user_id = u.user_id
+  WHERE EXTRACT(YEAR FROM oi.created_at) = 2024
+    AND oi.status NOT IN ('Returned', 'Cancelled')
+  GROUP BY oi.user_id, u.country
+  HAVING COUNT(DISTINCT oi.order_id) > 3
+),
+churn_filtered_users AS (
+  SELECT user_id
+  FROM `apex-activewear.silver_layer.user_churn_data`
+  WHERE churn_risk_tier = 'High'
+)
+SELECT
+  uos.country,
+  SUM(uos.total_spend_2024) AS total_spend,
+  AVG(uos.average_order_value_2024) AS average_order_value
+FROM user_order_stats uos
+JOIN churn_filtered_users cfu ON uos.user_id = cfu.user_id
+GROUP BY uos.country
+ORDER BY total_spend DESC;
