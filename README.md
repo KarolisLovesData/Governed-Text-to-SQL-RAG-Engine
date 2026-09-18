@@ -29,7 +29,7 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 ### 🔍 System Action
 #### *A sample governed query:*
 
-<img src="visuals/app_in_action_01.png" alt="RAG CLI Demo" width="800">
+<img src="visuals/app_in_action_01.png" alt="RAG CLI Demo" width="900">
 
 #### *Ground Truth Verification: Executing the Governed Query in BigQuery*
 
