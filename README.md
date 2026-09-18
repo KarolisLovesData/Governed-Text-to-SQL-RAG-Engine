@@ -34,12 +34,12 @@ LLM-generated SQL poses financial risks if it queries unoptimized datasets. This
 **User Prompt:**
 > *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
 
-<img src="visuals/app_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">[cite: 2]
+<img src="visuals/app_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">
 
 <details>
 <summary><b>🔍 View Validated Governed SQL</b></summary>
 
-sql
+```sql
 WITH user_order_stats AS (
   SELECT
     oi.user_id,
@@ -68,51 +68,3 @@ JOIN churn_filtered_users cfu ON uos.user_id = cfu.user_id
 GROUP BY uos.country
 ORDER BY total_spend DESC;
 
-</details>
-
-
-### 📈 Sample 2: Advanced Metric Derivation (Window Functions)
-Translates raw business requests into advanced period-over-period `LAG()` window math, enforcing complex analytical logic without requiring explicit prompt engineering.
-
-**User Prompt:**
-> *What is the month-over-month revenue growth rate and total distinct buyer count for top product categories in 2023, excluding returned items?*
-
-<img src="visuals/app_in_action_02.png" alt="CLI Execution for MoM Growth" width="900">
-
-<details>
-<summary><b>🔍 View Governed SQL with Window Math</b></summary>
-
-```sql
-WITH monthly_metrics AS (
-  SELECT
-    p.category,
-    EXTRACT(MONTH FROM oi.created_at) AS order_month,
-    COUNT(DISTINCT oi.user_id) AS distinct_buyer_count,
-    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue
-  FROM `apex-activewear.silver_layer.stg_order_items` oi
-  JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id
-  WHERE EXTRACT(YEAR FROM oi.created_at) = 2023
-    AND oi.status NOT IN ('Returned', 'Cancelled')
-  GROUP BY p.category, order_month
-),
-mom_calculations AS (
-  SELECT
-    category,
-    order_month,
-    distinct_buyer_count,
-    total_revenue,
-    LAG(total_revenue) OVER (PARTITION BY category ORDER BY order_month) AS prev_month_revenue,
-    LAG(distinct_buyer_count) OVER (PARTITION BY category ORDER BY order_month) AS prev_month_buyers
-  FROM monthly_metrics
-)
-SELECT
-  category,
-  order_month,
-  total_revenue,
-  distinct_buyer_count,
-  ROUND(SAFE_DIVIDE(total_revenue - prev_month_revenue, prev_month_revenue) * 100, 2) AS revenue_growth_rate_pct,
-  ROUND(SAFE_DIVIDE(distinct_buyer_count - prev_month_buyers, prev_month_buyers) * 100, 2) AS buyer_growth_rate_pct
-FROM mom_calculations
-ORDER BY category, order_month;
-
-</details>
