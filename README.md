@@ -39,7 +39,7 @@ LLM-generated SQL poses financial risks if it queries unoptimized datasets. This
 <details>
 <summary><b>🔍 View Validated Governed SQL</b></summary>
 
-```sql
+sql
 WITH user_order_stats AS (
   SELECT
     oi.user_id,
@@ -66,7 +66,8 @@ SELECT
 FROM user_order_stats uos
 JOIN churn_filtered_users cfu ON uos.user_id = cfu.user_id
 GROUP BY uos.country
-ORDER BY total_spend DESC;```
+ORDER BY total_spend DESC;
+
 </details>
 
 
@@ -81,7 +82,7 @@ Translates raw business requests into advanced period-over-period `LAG()` window
 <details>
 <summary><b>🔍 View Governed SQL with Window Math</b></summary>
 
-```sql
+sql
 WITH monthly_metrics AS (
   SELECT
     p.category,
@@ -113,3 +114,5 @@ SELECT
   ROUND(SAFE_DIVIDE(distinct_buyer_count - prev_month_buyers, prev_month_buyers) * 100, 2) AS buyer_growth_rate_pct
 FROM mom_calculations
 ORDER BY category, order_month;
+
+</details>
