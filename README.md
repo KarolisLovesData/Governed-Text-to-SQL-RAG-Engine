@@ -8,19 +8,19 @@
 ![Gemini AI](https://img.shields.io/badge/AI-Gemini_3.7_Flash-8E75B2.svg?logo=google-gemini&logoColor=white)
 
 ## ⚠️ Context & Business Problem: Hallucinated Analytics
-**APEX Activewear** is a high-volume e-commerce enterprise processing over 436K+ transactions and $48.85M in total volume[cite: 1]. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL[cite: 1].
+**APEX Activewear** is a high-volume e-commerce enterprise processing over 436K+ transactions and $48.85M in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL.
 
-Attempting to solve this by pointing out-of-the-box LLMs directly at the warehouse created a severe financial risk[cite: 1]. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a 24% return rate or applying critical "Ghost Revenue" rules[cite: 1]. The business required an AI semantic layer capable of enabling plain-English querying while strictly enforcing CFO-level accuracy[cite: 1].
+Attempting to solve this by pointing out-of-the-box LLMs directly at the warehouse created a severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a 24% return rate or applying critical "Ghost Revenue" rules. The business required an AI semantic layer capable of enabling plain-English querying while strictly enforcing CFO-level accuracy.
 
 ## 🏗️ Data Architecture & Scale
-Translating natural language to SQL is trivial on isolated flat files, but highly complex within a production-grade relational warehouse[cite: 1]. The AI engine must successfully navigate a comprehensive Dataform Medallion architecture encompassing diverse, interconnected entity domains (users, distribution centers, products, and online events)[cite: 2]. 
+Translating natural language to SQL is trivial on isolated flat files, but highly complex within a production-grade relational warehouse. The AI engine must successfully navigate a comprehensive Dataform Medallion architecture encompassing diverse, interconnected entity domains (users, distribution centers, products, and online events). 
 
 Rather than a handful of tables, the underlying topology consists of:
-* **Raw Ingestion Layer:** 6 foundational source declarations managing continuous event and transactional data[cite: 2].
-* **Silver Staging & Quality:** Standardized views protected by strict automated logic, including logistical timeline validations and revenue status assertions[cite: 2].
-* **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as RFM segmentation, cohort retention, and global fulfillment tracking[cite: 2].
+* **Raw Ingestion Layer:** 6 foundational source declarations managing continuous event and transactional data.
+* **Silver Staging & Quality:** Standardized views protected by strict automated logic, including logistical timeline validations and revenue status assertions.
+* **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as RFM segmentation, cohort retention, and global fulfillment tracking.
 
-To prevent join hallucinations across this scale, an AI cannot simply read raw schema; it must be constrained by the exact dependency graph to safely route user intent through validated transformation paths[cite: 1, 2].
+To prevent join hallucinations across this scale, an AI cannot simply read raw schema; it must be constrained by the exact dependency graph to safely route user intent through validated transformation paths.
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
