@@ -46,7 +46,7 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 This engine is split into two primary automated modules:
 
 * **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
-* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-2.5-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
+* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
 ---
 
 ### 🔍 System Action
