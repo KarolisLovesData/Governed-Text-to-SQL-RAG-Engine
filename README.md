@@ -9,11 +9,11 @@
 
 ## ⚠️ Context & Business Problem: Hallucinated Analytics
 
-**APEX Activewear** is a high-volume e-commerce enterprise processing over 436K+ transactions and $48.85M in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL.
+**APEX Activewear** processes 436K+ transactions and **$48.85M** in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: actionable insights required the data team to write custom SQL.
 
-Attempting to solve this by pointing out-of-the-box LLMs directly at the warehouse created a severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a 24% return rate or applying critical "Ghost Revenue" rules.
+Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a **24% return rate** or applying **"Ghost Revenue"** rules.
 
-The business required an AI semantic layer capable of enabling plain-English querying while strictly enforcing CFO-level accuracy. This repository contains the robust Python CLI backend agent engineered to safely execute these translations, serving as the foundational governance engine designed for future integration with stakeholder-facing interfaces (e.g., Streamlit or Slackbots).
+The business required an **AI semantic layer** capable of enabling plain-English querying while strictly enforcing **CFO-level accuracy**. This repository contains the **Python CLI backend agent** engineered to safely execute these translations, serving as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots).
 
 ## 🏗️ Data Architecture & Scale
 
@@ -25,20 +25,20 @@ The underlying topology consists of:
 * **Silver Staging & Quality:** Standardized views protected by strict automated logic, including **logistical timeline validations** and **revenue status assertions**.
 * **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as **RFM segmentation**, **cohort retention**, and **global fulfillment tracking**.
 
-To prevent join hallucinations across this scale, an AI cannot simply read raw schema; it must be constrained by the exact dependency graph to safely route user intent through validated transformation paths.
+To prevent join hallucinations across this scale, an AI cannot simply read raw schema; to safely route user intent through validated transformation paths it must be constrained by the exact **dependency graph** shown below: 
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 
-I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL.
+I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade **BigQuery SQL**.
 
 <img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
 
 **Key Technical Implementations:**
-* **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON Golden Few-Shot Queries, CSV-based governance rules, and BigQuery `INFORMATION_SCHEMA` to dynamically construct and continuously update the semantic vector index.
-* **Native BigQuery Hybrid Search with Custom RRF:** Pushed the search workload directly into the warehouse, utilizing BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom Reciprocal Rank Fusion (RRF) scoring logic in Python to mathematically merge these dataframes, optimizing context retrieval without relying on black-box external frameworks.
-* **Agentic Self-Healing AI Loop:** Integrates a $0 BigQuery dry-run API validation step that executes the generated query virtually. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the agent explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
+* **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON **Golden Few-Shot Queries**, CSV governance rules, and BigQuery `INFORMATION_SCHEMA` to dynamically construct and update the semantic vector index.
+* **Native BigQuery Hybrid Search with Custom RRF:** Pushed the search workload directly into the warehouse using BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom **Reciprocal Rank Fusion (RRF)** scoring logic in **Python** to mathematically merge these dataframes, optimizing context retrieval without relying on black-box external frameworks.
+* **Agentic Self-Healing AI Loop:** Integrates a **$0 BigQuery dry-run API** validation step to virtually execute the generated query. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the agent explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
 * **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
 
 ## ⚙️ Repository Structure & Quickstart
