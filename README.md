@@ -49,10 +49,14 @@ This engine is split into two primary automated modules:
 * **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
 ---
 
-### 🔍 System Action
+## 🔍 System in Action: Live CLI Demos
+
+Visual proof is critical. The following terminal executions demonstrate the engine's ability to ingest complex business intent, navigate the Medallion architecture, and output cost-validated, production-ready SQL.
 
 ### 🛡️ Sample 1: Proactive Cost Control & Pre-Execution Validation
-LLM-generated SQL poses financial risks if it queries unoptimized datasets. This engine intercepts the generated query and runs a $0 BigQuery dry-run to validate syntax and estimate compute costs *before* execution.
+LLM-generated SQL poses severe financial risks if it blindly queries unoptimized datasets. To mitigate this, the engine intercepts the generated query and executes a **$0 BigQuery API dry-run**. 
+
+*Notice in the terminal execution below how the agent validates syntax and explicitly estimates compute costs (MBs scanned) **before** final output.*
 
 **User Prompt:**
 > *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
@@ -95,7 +99,7 @@ ORDER BY total_spend DESC;
 </details>
 
  ### 📈 Sample 2: Advanced Metric Derivation (Window Functions)
-Translates raw business requests into advanced period-over-period `LAG()` window math, enforcing complex analytical logic without requiring explicit prompt engineering.
+Standard LLMs struggle with multi-step period-over-period calculations. This agent successfully translates raw business requests into advanced LAG() **window math** and dynamic Common Table Expressions (CTEs), enforcing analytical rigor without requiring explicit prompt engineering.
 
 **User Prompt:**
 > *What is the month-over-month revenue growth rate and total distinct buyer count for top product categories in 2023, excluding returned items?*
