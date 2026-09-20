@@ -8,14 +8,19 @@
 ![Gemini AI](https://img.shields.io/badge/AI-Gemini_3.7_Flash-8E75B2.svg?logo=google-gemini&logoColor=white)
 
 ## ⚠️ Context & Business Problem: Hallucinated Analytics
+
 **APEX Activewear** is a high-volume e-commerce enterprise processing over 436K+ transactions and $48.85M in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: extracting actionable insights required waiting on the data team to write custom SQL.
 
-Attempting to solve this by pointing out-of-the-box LLMs directly at the warehouse created a severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a 24% return rate or applying critical "Ghost Revenue" rules. The business required an AI semantic layer capable of enabling plain-English querying while strictly enforcing CFO-level accuracy.
+Attempting to solve this by pointing out-of-the-box LLMs directly at the warehouse created a severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a 24% return rate or applying critical "Ghost Revenue" rules.
+
+The business required an AI semantic layer capable of enabling plain-English querying while strictly enforcing CFO-level accuracy. This repository contains the robust Python CLI backend agent engineered to safely execute these translations, serving as the foundational governance engine designed for future integration with stakeholder-facing interfaces (e.g., Streamlit or Slackbots).
 
 ## 🏗️ Data Architecture & Scale
-Translating natural language to SQL is trivial on isolated flat files, but highly complex within a production-grade relational warehouse. The AI engine must successfully navigate a comprehensive Dataform Medallion architecture encompassing diverse, interconnected entity domains (users, distribution centers, products, and online events). 
+
+Translating natural language to SQL is trivial on isolated flat files, but highly complex within a production-grade relational warehouse. The AI engine must successfully navigate a comprehensive Dataform Medallion architecture encompassing diverse, interconnected entity domains (users, distribution centers, products, and online events).
 
 Rather than a handful of tables, the underlying topology consists of:
+
 * **Raw Ingestion Layer:** 6 foundational source declarations managing continuous event and transactional data.
 * **Silver Staging & Quality:** Standardized views protected by strict automated logic, including logistical timeline validations and revenue status assertions.
 * **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as RFM segmentation, cohort retention, and global fulfillment tracking.
@@ -24,19 +29,24 @@ To prevent join hallucinations across this scale, an AI cannot simply read raw s
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
-
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
-I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL. 
 
- <img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
+I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL.
+
+<img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
 
 **Key Technical Implementations:**
-* **Native BigQuery Hybrid Search:** Pushed the search workload directly into the warehouse, utilizing BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching) fused via Reciprocal Rank Fusion (RRF).
-* **Strict Governance Guardrails:** Dynamically parses BigQuery `INFORMATION_SCHEMA` and Dataform assertions, restricting the AI exclusively to certified `gold_layer` tables.
-* **Self-Healing AI Loop:** Integrates a BigQuery dry-run API validation step that catches syntax/schema errors and forces the Gemini 3.7 Flash model to auto-correct before outputting the final query.
+* **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON Golden Few-Shot Queries, CSV-based governance rules, and BigQuery `INFORMATION_SCHEMA` to dynamically construct and continuously update the semantic vector index.
+* **Native BigQuery Hybrid Search with Custom RRF:** Pushed the search workload directly into the warehouse, utilizing BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom Reciprocal Rank Fusion (RRF) scoring logic in Python to mathematically merge these dataframes, optimizing context retrieval without relying on black-box external frameworks.
+* **Agentic Self-Healing AI Loop:** Integrates a $0 BigQuery dry-run API validation step that executes the generated query virtually. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the agent explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
+* **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
 
-**Business Impact:** Stakeholders can now query the warehouse in plain English with mathematical certainty that the generated SQL perfectly matches the CFO's definition of realized revenue.
+## ⚙️ Repository Structure & Quickstart
 
+This engine is split into two primary automated modules:
+
+* **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
+* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-2.5-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
 ---
 
 ### 🔍 System Action
