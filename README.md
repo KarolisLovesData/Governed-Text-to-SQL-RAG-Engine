@@ -17,14 +17,13 @@ The business required an AI semantic layer capable of enabling plain-English que
 
 ## 🏗️ Data Architecture & Scale
 
-Translating natural language to SQL is trivial on isolated flat files, but highly complex within a production-grade relational warehouse. The AI engine must successfully navigate a comprehensive Dataform Medallion architecture encompassing diverse, interconnected entity domains (users, distribution centers, products, and online events).
+Translating natural language to SQL is highly complex within a **production-grade relational warehouse**. The AI engine is engineered to successfully navigate a comprehensive **Dataform Medallion architecture**, seamlessly joining interconnected entity domains (**users**, **distribution centers**, **products**, and **online events**). 
 
-Rather than a handful of tables, the underlying topology consists of:
+The underlying topology consists of:
 
 * **Raw Ingestion Layer:** 6 foundational source declarations managing continuous event and transactional data.
-* **Silver Staging & Quality:** Standardized views protected by strict automated logic, including logistical timeline validations and revenue status assertions.
-* **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as RFM segmentation, cohort retention, and global fulfillment tracking.
-
+* **Silver Staging & Quality:** Standardized views protected by strict automated logic, including **logistical timeline validations** and **revenue status assertions**.
+* **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as **RFM segmentation**, **cohort retention**, and **global fulfillment tracking**.
 To prevent join hallucinations across this scale, an AI cannot simply read raw schema; it must be constrained by the exact dependency graph to safely route user intent through validated transformation paths.
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
