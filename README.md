@@ -12,6 +12,14 @@
 
 To enable self-service, stakeholders attempted using out-of-the-box LLMs to query the warehouse directly. However, raw models inherently **hallucinate business logic**—blindly querying uncertified staging tables, ignoring complex financial definitions (like filtering out our 24% return rate), and missing critical "Ghost Revenue" filters, resulting in mathematically incorrect metrics.
 
+## 🏗️ Data Architecture & Scale
+Translating natural language to SQL is trivial on flat tables, but highly complex in relational enterprise environments. The engine must successfully navigate a Dataform Medallion architecture processing over 436K+ active transactions and $48.85M in total volume.
+
+Instead of hallucinating join paths, the RAG agent dynamically evaluates the dependency graph—safely routing queries across raw sources, Silver staging tables, and Gold analytical marts while passing all strict assertion tests.
+
+<img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
+
+
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade BigQuery SQL. 
 
