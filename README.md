@@ -136,6 +136,8 @@ FROM mom_calculations
 ORDER BY category, order_month;
 ```
 
+</details>
+
 ## ⚙️ Repository Structure & Quickstart
 
 This engine is split into two primary automated modules:
