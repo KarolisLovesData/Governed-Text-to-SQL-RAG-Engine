@@ -41,13 +41,6 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 * **Agentic Self-Healing AI Loop:** Integrates a **$0 BigQuery dry-run API** validation step to virtually execute the generated query. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the agent explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
 * **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
 
-## ⚙️ Repository Structure & Quickstart
-
-This engine is split into two primary automated modules:
-
-* **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
-* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
----
 
 ## 🔍 System in Action: Live CLI Demos
 
@@ -143,3 +136,10 @@ FROM mom_calculations
 ORDER BY category, order_month;
 ```
 
+## ⚙️ Repository Structure & Quickstart
+
+This engine is split into two primary automated modules:
+
+* **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
+* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
+---
