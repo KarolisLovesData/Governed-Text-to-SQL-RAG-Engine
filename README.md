@@ -43,7 +43,7 @@ To prevent join hallucinations across this scale, an AI cannot simply read raw s
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
-## 📊 Quantitative Model Evaluation: Multi-Agent LLM-as-a-Judge evaluation 
+## 📊 Quantitative Model Evaluation: Multi-Agent LLM-as-a-Judge  
 
 To ensure CFO-level reliability, the engine is programmatically evaluated against a test suite of **20 complex business questions** spanning RFM segmentation, windowed growth calculations, and multi-table joins. 
 
@@ -160,8 +160,8 @@ ORDER BY category, order_month;
 
 ## ⚙️ Repository Structure & Quickstart
 
-This engine is split into two primary automated modules:
+This engine is split into three primary automated modules:
 
 * **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
-* **`2_text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
----
+* **`text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
+* **`3_run_evals.py`**: The LLM-as-a-Judge evaluation suite. It programmatically tests the generated SQL against a golden dataset to guarantee semantic logic matches and schema precision prior to deployment.
