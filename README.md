@@ -43,7 +43,7 @@ To prevent join hallucinations across this scale, an AI cannot simply read raw s
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
-## 📊 Quantitative Model Evaluation Benchmark & Architecture Decisions
+## 📊 Quantitative Model Evaluation: Multi-Agent LLM-as-a-Judge evaluation 
 
 To ensure CFO-level reliability, the engine is programmatically evaluated against a test suite of **20 complex business questions** spanning RFM segmentation, windowed growth calculations, and multi-table joins. 
 
