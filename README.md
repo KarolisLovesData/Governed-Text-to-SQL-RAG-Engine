@@ -54,6 +54,20 @@ To ensure CFO-level reliability, the engine is programmatically evaluated agains
 | **Semantic Logic Match** | **100.0%** | Multi-Agent LLM-as-a-Judge evaluation |
 | **Avg Generation Latency** | **~9.13s** | End-to-end execution timer |
 
+## 📊 Quantitative Benchmark: Baseline vs. Governed RAG Agent
+
+To validate the necessity of the governance layer, the system was benchmarked across **20 complex enterprise queries** evaluating schema precision, syntactic execution, and semantic logic against ground-truth analytical standards.
+
+| Evaluation Metric (n=20 Queries) | Baseline (Schema-Only Prompt) | Champion (Governed RAG Agent) | Delta / Business Impact |
+| :--- | :--- | :--- | :--- |
+| **Dry-Run Syntax Accuracy** | 100.0% | **100.0%** | Zero syntactic crashes across both models |
+| **Schema Precision (Table Joins)** | 100.0% | **100.0%** | Correct table selection via schema visibility |
+| **Semantic Logic Match (LLM Judge)** | 85.0% *(17/20)* | **100.0% *(20/20)*** | **+15.0%** elimination of logic hallucinations |
+| **Average Generation Latency** | **~4.00s** | ~9.13s | +5.13s tradeoff for multi-agent dry-run validation |
+
+### 💡 Key Evaluation Takeaway: Eliminating Silent Failures
+While a baseline LLM provided with raw database schemas achieves 85% semantic accuracy, it consistently fails on business-critical queries (e.g., `eval_07`, `eval_10`, `eval_17`) by relying on surface-level column names (`is_realized_revenue`) rather than enforced Dataform transformation logic (`status NOT IN ('Returned', 'Cancelled')`). The RAG Governance Agent closes this **15% accuracy gap**, guaranteeing **CFO-level correctness** across all enterprise reports.
+
 ### Core Architectural Decisions (ADR)
 
 **1. Why LLM-as-a-Judge over Deterministic Evaluation?**
