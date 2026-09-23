@@ -45,36 +45,24 @@ To prevent join hallucinations across this scale, an AI cannot simply read raw s
 
 ## 📊 Quantitative Benchmark: Baseline vs. Governed RAG Agent
 
-To ensure CFO-level reliability and validate the necessity of the governance layer, the system is programmatically evaluated against a test suite of **23 complex business questions**. This multi-agent "LLM-as-a-Judge" suite spans strict financial logic, windowed growth calculations, and highly ambiguous business jargon.
+The system is evaluated against a test suite of **23 complex business queries** (spanning strict financial logic, windowed growth calculations, and ambiguous business jargon) to prove the governance layer's impact on enterprise reliability.
 
-| Evaluation Metric (n=23 Queries) | Baseline (Schema-Only Prompt) | Champion (Governed RAG Agent) | Delta / Business Impact |
+| Evaluation Metric (n=23) | Baseline (Schema-Only) | Champion (Governed RAG) | Business Impact / Trade-off |
 | :--- | :--- | :--- | :--- |
 | **Dry-Run Syntax Accuracy** | 100.0% | **100.0%** | Zero syntactic crashes across both models |
-| **Schema Precision (Table Joins)** | 91.3% | **95.7%** | **+4.4%** improvement in resolving ambiguous business terminology |
-| **Semantic Logic Match (LLM Judge)** | 78.3% *(18/23)* | **91.3% *(21/23)*** | **+13.0%** elimination of unwritten logic hallucinations |
-| **Average Generation Latency** | ~9.45s | **~11.24s** | +1.79s tradeoff for multi-agent validation and hybrid search |
+| **Schema Precision** | 91.3% | **95.7%** | **+4.4%** in resolving ambiguous business terminology |
+| **Semantic Logic Match** | 78.3% *(18/23)* | **91.3% *(21/23)*** | **+13.0%** elimination of unwritten financial logic errors |
+| **Average Latency** | ~9.45s | **~11.24s** | +1.79s tradeoff for multi-agent validation and hybrid search |
 
-### 🧠 Semantic Intent Resolution & Eliminating Silent Failures
-The introduction of ambiguous, high-level business queries (e.g., asking for "serial returners" or "financial drag") exposed two critical failure modes in standard LLM prompting:
+### 🧠 Failure Mode Analysis & Resolution
 
-1. **The Business-to-Schema Translation Gap:** Non-technical stakeholders do not speak in table names. The baseline model, relying purely on raw database schemas, failed to locate the correct tables for ambiguous requests, resulting in a 91.3% schema precision score. The Champion agent leveraged Hybrid Vector Search to mathematically map human jargon directly to the certified analytical marts, boosting schema precision to 95.7%.
-2. **Silent Financial Errors:** While the baseline achieved 100% syntax validity, it consistently failed on business-critical queries (such as calculating realized revenue or month-over-month growth) by missing unwritten filtering rules. It falsely relied on surface-level column names rather than enforced Dataform transformation logic. The RAG Governance Agent dynamically injected these assertions, closing the **13.0% logic gap** and ensuring mathematically sound enterprise reporting.
+1. **The Translation Gap (Schema Precision):** Standard LLM prompting failed to map non-technical jargon (e.g., "serial returners") to raw table names, yielding a 91.3% schema precision. Hybrid Vector Search mathematically bridges this gap, routing queries directly to certified analytical marts at **95.7% precision**.
+2. **Silent Financial Errors (Logic Match):** While the baseline produced syntactically valid SQL, it missed unwritten business rules (such as omitting canceled orders from revenue calculations). Injecting governed Dataform assertions dynamically closed the **13.0% logic gap**.
 
-### 🏗️ Core Architectural Decisions (ADR)
+### 🏗️ Architectural Decision Records (ADR)
 
-**1. Why LLM-as-a-Judge over Deterministic Evaluation?**
-Initial deterministic evaluations (e.g., Pandas `.equals()`) penalized the agent for proactively deriving requested metrics—such as calculating actual growth rates when asked to "compare" quarters, rather than just returning two static columns. To solve this without suppressing the model's intelligence, I implemented a **Multi-Agent LLM-as-a-Judge evaluation framework**. This judges semantic and logical equivalence, allowing the model to exceed baseline expectations without failing CI/CD checks.
-
-**2. Why RAG over Fine-Tuning?**
-I explicitly chose Hybrid Search RAG over fine-tuning a custom LLM. Fine-tuned models lock in table structures and hallucinate non-existent columns when warehouse schemas naturally evolve. RAG with dynamic BigQuery `INFORMATION_SCHEMA` indexing guarantees strict adherence to live Dataform assertions at zero retraining cost.
-### Core Architectural Decisions (ADR)
-
-**1. Why LLM-as-a-Judge over Deterministic Evaluation?**
-Initial deterministic evaluations (e.g., Pandas `.equals()`) penalized the agent for proactively deriving requested metrics—such as calculating actual growth rates when asked to "compare" quarters, rather than just returning two static columns. To solve this without suppressing the model's intelligence, I implemented a **Multi-Agent LLM-as-a-Judge evaluation framework**. This judges semantic and logical equivalence, allowing the model to exceed baseline expectations without failing CI/CD checks.
-
-**2. Why RAG over Fine-Tuning?**
-I explicitly chose Hybrid Search RAG over fine-tuning a custom LLM. Fine-tuned models lock in table structures and hallucinate non-existent columns when warehouse schemas naturally evolve. RAG with dynamic BigQuery `INFORMATION_SCHEMA` indexing guarantees strict adherence to live Dataform assertions at zero retraining cost.
-
+* **LLM-as-a-Judge vs. Deterministic Testing:** Deterministic assertions (e.g., Pandas `.equals()`) penalize models for intelligently structuring derived metrics. A multi-agent semantic evaluation framework grades logical equivalence, allowing flexible, correct outputs without failing CI/CD checks.
+* **RAG vs. Fine-Tuning:** Fine-tuning locks in static table structures that break as warehouse schemas evolve. Hybrid Search RAG with dynamic `INFORMATION_SCHEMA` indexing ensures strict adherence to live data contracts at zero retraining cost.
 ## 🔍 System in Action: Live CLI Demos
 
 Visual proof is critical. The following terminal executions demonstrate the engine's ability to ingest complex business intent, navigate the Medallion architecture, and output cost-validated, production-ready SQL.
