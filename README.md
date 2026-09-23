@@ -11,7 +11,9 @@
 
 **APEX Activewear** processes 436K+ transactions and **$48.85M** in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: actionable insights required the data team to write custom SQL.
 
-Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic—blindly querying uncertified staging tables and ignoring complex financial definitions, such as filtering out a **24% return rate** or applying **"Ghost Revenue"** rules.
+Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic, failing on critical operational bottlenecks:
+* **Ignoring Returns:** Blindly calculating revenue without filtering out the **24% return rate**.
+* **Missing Financial Nuance:** Bypassing strict **"Ghost Revenue"** rules and querying uncertified staging tables.
 
 The business required an **AI semantic layer** capable of enabling plain-English querying while strictly enforcing **CFO-level accuracy**. This repository contains the **Python CLI backend agent** engineered to safely execute these translations, serving as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots).
 
@@ -24,9 +26,8 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 **Key Technical Implementations:**
 * **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON **Golden Few-Shot Queries**, CSV governance rules, and BigQuery `INFORMATION_SCHEMA` to dynamically construct and update the semantic vector index.
 * **Native BigQuery Hybrid Search with Custom RRF:** Pushed the search workload directly into the warehouse using BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom **Reciprocal Rank Fusion (RRF)** scoring logic in **Python** to mathematically merge these dataframes, optimizing context retrieval without relying on black-box external frameworks.
-* **Agentic Self-Healing AI Loop:** Integrates a **$0 BigQuery dry-run API** validation step to virtually execute the generated query. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the agent explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
-* **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
-
+* **Agentic Self-Healing AI Loop:** Operates as a dynamic balancing feedback loop within the pipeline. It integrates a **$0 BigQuery dry-run API** validation step to virtually execute the generated query. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the system explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
+* **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, the architecture creates a hard security boundary. This isolation prevents unauthorized cross-domain joins and unintended data exposure, ensuring stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
 
 
 ## 🏗️ Data Architecture & Scale
@@ -161,8 +162,8 @@ ORDER BY category, order_month;
 
 ## ⚙️ Repository Structure & Quickstart
 
-This engine is split into three primary automated modules:
+This engine is split into three primary automated modules that map directly to the Medallion architecture workflow:
 
-* **`1_build_bq_hybrid_index.py`**: The ingestion pipeline. It reads schemas, queries, and business assertions, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
-* **`text_to_sql_engine.py`**: The RAG CLI execution agent. It takes user input, performs the hybrid search, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL.
-* **`3_run_evals.py`**: The LLM-as-a-Judge evaluation suite. It programmatically tests the generated SQL against a golden dataset to guarantee semantic logic matches and schema precision prior to deployment.
+* **`1_build_bq_hybrid_index.py` (The Governance Indexer):** The ingestion pipeline. It reads schemas, queries, and business assertions from the Silver and Gold layers, generates embeddings via `gemini-embedding-001`, and overwrites the active `ai_governance_index` table in BigQuery.
+* **`text_to_sql_engine.py` (The RAG Execution Agent):** The user-facing operational layer. It takes user input, performs the hybrid search against the index, prompts `gemini-3.7-flash`, executes the self-healing dry-run loop, and outputs the final governed SQL strictly routed through certified Dataform models.
+* **`3_run_evals.py` (The CI/CD Validator):** The LLM-as-a-Judge evaluation suite. It programmatically tests the generated SQL against a golden dataset to guarantee semantic logic matches and schema precision prior to deployment, ensuring the pipeline's analytical rigor remains intact.
