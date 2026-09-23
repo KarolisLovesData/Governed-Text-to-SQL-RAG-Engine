@@ -19,14 +19,14 @@ The business urgently needed an architecture capable of bridging plain-English i
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 
-To close this gap, I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language intent and safely translates it into production-grade **BigQuery SQL**. This **Python CLI backend** serves as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots), enforcing **CFO-level accuracy** at scale.
+I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language intent and safely translates it into production-grade **BigQuery SQL**. This **Python CLI backend** serves as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots), enforcing **CFO-level accuracy** at scale.
 
 <img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
 
 **Key Technical Implementations:**
-* **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON **Golden Few-Shot Queries**, CSV governance rules, and BigQuery `INFORMATION_SCHEMA` to dynamically construct and update the semantic vector index.
-* **Native BigQuery Hybrid Search with Custom RRF:** Pushed the search workload directly into the warehouse using BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom **Reciprocal Rank Fusion (RRF)** scoring logic in **Python** to mathematically merge these dataframes, optimizing context retrieval without relying on black-box external frameworks.
-* **Agentic Self-Healing AI Loop:** Operates as a dynamic balancing feedback loop within the pipeline. It integrates a **$0 BigQuery dry-run API** validation step to virtually execute the generated query. If a `GoogleCloudError` (syntax error or schema mismatch) occurs, the system explicitly catches the exception and feeds the exact error message back into the LLM context for automated correction before outputting the final SQL.
+* **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON **Golden Few-Shot Queries**, CSV governance rules, and BigQuery `INFORMATION_SCHEMA` to construct and maintain a dynamically updating semantic vector index.
+* **Native BigQuery Hybrid Search (No Black-Box):** Pushed the search workload directly into the warehouse using BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom **Reciprocal Rank Fusion (RRF)** scoring natively in **Python** to mathematically merge these dataframes, optimizing context retrieval without relying on bloated external frameworks.
+* **Agentic Self-Healing AI Loop:** Operates as a dynamic balancing feedback mechanism driven by a **$0 BigQuery dry-run API**. If a `GoogleCloudError` (syntax error or schema mismatch) triggers, the system explicitly catches the exception and injects the exact error trace back into the LLM context for automated correction prior to final execution.
 * **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, the architecture creates a hard security boundary. This isolation prevents unauthorized cross-domain joins and unintended data exposure, ensuring stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
 
 
