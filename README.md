@@ -43,31 +43,30 @@ To prevent join hallucinations across this scale, an AI cannot simply read raw s
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
-## 📊 Quantitative Model Evaluation: Multi-Agent LLM-as-a-Judge  
-
-To ensure CFO-level reliability, the engine is programmatically evaluated against a test suite of **20 complex business questions** spanning RFM segmentation, windowed growth calculations, and multi-table joins. 
-
-| Metric | Score | Evaluation Method |
-| :--- | :--- | :--- |
-| **Dry-Run Syntax Accuracy** | **100.0%** | Zero-cost BigQuery API validation |
-| **Schema Precision (Joins)** | **100.0%** | AST / String parsing for expected tables |
-| **Semantic Logic Match** | **100.0%** | Multi-Agent LLM-as-a-Judge evaluation |
-| **Avg Generation Latency** | **~9.13s** | End-to-end execution timer |
-
 ## 📊 Quantitative Benchmark: Baseline vs. Governed RAG Agent
 
-To validate the necessity of the governance layer, the system was benchmarked across **20 complex enterprise queries** evaluating schema precision, syntactic execution, and semantic logic against ground-truth analytical standards.
+To ensure CFO-level reliability and validate the necessity of the governance layer, the system is programmatically evaluated against a test suite of **23 complex business questions**. This multi-agent "LLM-as-a-Judge" suite spans strict financial logic, windowed growth calculations, and highly ambiguous business jargon.
 
-| Evaluation Metric (n=20 Queries) | Baseline (Schema-Only Prompt) | Champion (Governed RAG Agent) | Delta / Business Impact |
+| Evaluation Metric (n=23 Queries) | Baseline (Schema-Only Prompt) | Champion (Governed RAG Agent) | Delta / Business Impact |
 | :--- | :--- | :--- | :--- |
 | **Dry-Run Syntax Accuracy** | 100.0% | **100.0%** | Zero syntactic crashes across both models |
-| **Schema Precision (Table Joins)** | 100.0% | **100.0%** | Correct table selection via schema visibility |
-| **Semantic Logic Match (LLM Judge)** | 85.0% *(17/20)* | **100.0% *(20/20)*** | **+15.0%** elimination of logic hallucinations |
-| **Average Generation Latency** | **~4.00s** | ~9.13s | +5.13s tradeoff for multi-agent dry-run validation |
+| **Schema Precision (Table Joins)** | 91.3% | **95.7%** | **+4.4%** improvement in resolving ambiguous business terminology |
+| **Semantic Logic Match (LLM Judge)** | 78.3% *(18/23)* | **91.3% *(21/23)*** | **+13.0%** elimination of unwritten logic hallucinations |
+| **Average Generation Latency** | ~9.45s | **~11.24s** | +1.79s tradeoff for multi-agent validation and hybrid search |
 
-### 💡 Key Evaluation Takeaway: Eliminating Silent Failures
-While a baseline LLM provided with raw database schemas achieves 85% semantic accuracy, it consistently fails on business-critical queries (e.g., `eval_07`, `eval_10`, `eval_17`) by relying on surface-level column names (`is_realized_revenue`) rather than enforced Dataform transformation logic (`status NOT IN ('Returned', 'Cancelled')`). The RAG Governance Agent closes this **15% accuracy gap**, guaranteeing **CFO-level correctness** across all enterprise reports.
+### 🧠 Semantic Intent Resolution & Eliminating Silent Failures
+The introduction of ambiguous, high-level business queries (e.g., asking for "serial returners" or "financial drag") exposed two critical failure modes in standard LLM prompting:
 
+1. **The Business-to-Schema Translation Gap:** Non-technical stakeholders do not speak in table names. The baseline model, relying purely on raw database schemas, failed to locate the correct tables for ambiguous requests, resulting in a 91.3% schema precision score. The Champion agent leveraged Hybrid Vector Search to mathematically map human jargon directly to the certified analytical marts, boosting schema precision to 95.7%.
+2. **Silent Financial Errors:** While the baseline achieved 100% syntax validity, it consistently failed on business-critical queries (such as calculating realized revenue or month-over-month growth) by missing unwritten filtering rules. It falsely relied on surface-level column names rather than enforced Dataform transformation logic. The RAG Governance Agent dynamically injected these assertions, closing the **13.0% logic gap** and ensuring mathematically sound enterprise reporting.
+
+### 🏗️ Core Architectural Decisions (ADR)
+
+**1. Why LLM-as-a-Judge over Deterministic Evaluation?**
+Initial deterministic evaluations (e.g., Pandas `.equals()`) penalized the agent for proactively deriving requested metrics—such as calculating actual growth rates when asked to "compare" quarters, rather than just returning two static columns. To solve this without suppressing the model's intelligence, I implemented a **Multi-Agent LLM-as-a-Judge evaluation framework**. This judges semantic and logical equivalence, allowing the model to exceed baseline expectations without failing CI/CD checks.
+
+**2. Why RAG over Fine-Tuning?**
+I explicitly chose Hybrid Search RAG over fine-tuning a custom LLM. Fine-tuned models lock in table structures and hallucinate non-existent columns when warehouse schemas naturally evolve. RAG with dynamic BigQuery `INFORMATION_SCHEMA` indexing guarantees strict adherence to live Dataform assertions at zero retraining cost.
 ### Core Architectural Decisions (ADR)
 
 **1. Why LLM-as-a-Judge over Deterministic Evaluation?**
