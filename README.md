@@ -11,15 +11,15 @@
 
 **APEX Activewear** processes 436K+ transactions and **$48.85M** in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: actionable insights required the data team to write custom SQL.
 
-Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic, failing on critical operational bottlenecks:
-* **Ignoring Returns:** Blindly calculating revenue without filtering out the **24% return rate**.
-* **Missing Financial Nuance:** Bypassing strict **"Ghost Revenue"** rules and querying uncertified staging tables.
+Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic by failing to account for unwritten operational nuances. Common examples of these critical failures included:
+* Blindly calculating revenue without filtering out the **24% return rate**.
+* Bypassing strict **"Ghost Revenue"** definitions and querying uncertified staging tables.
 
-The business required an **AI semantic layer** capable of enabling plain-English querying while strictly enforcing **CFO-level accuracy**. This repository contains the **Python CLI backend agent** engineered to safely execute these translations, serving as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots).
+The business urgently needed a bridge between plain-English stakeholder questions and strictly governed financial metrics.
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 
-I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language questions and safely translates them into production-grade **BigQuery SQL**.
+To close this gap, I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language intent and safely translates it into production-grade **BigQuery SQL**. This **Python CLI backend** serves as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots), enforcing **CFO-level accuracy** at scale.
 
 <img src="visuals/Hybrid_Search_Architecture.jpeg" alt="RAG CLI Demo" width="800">
 
