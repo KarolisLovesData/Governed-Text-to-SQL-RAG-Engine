@@ -11,11 +11,11 @@
 
 **APEX Activewear** processes 436K+ transactions and **$48.85M** in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: actionable insights required the data team to write custom SQL.
 
-Pointing out-of-the-box LLMs directly at the warehouse created severe financial risk. Raw models confidently hallucinated business logic by failing to account for unwritten operational nuances. Common examples of these critical failures included:
-* Blindly calculating revenue without filtering out the **24% return rate**.
-* Bypassing strict **"Ghost Revenue"** definitions and querying uncertified staging tables.
+Pointing an out-of-the-box LLM directly at the warehouse creates a dangerous illusion of success. Baseline models generate syntactically flawless SQL, but introduce severe operational risk by failing on two critical fronts:
+* **Silent Financial Errors:** The AI confidently writes code that executes without errors, but calculates metrics incorrectly by missing unwritten business rules (e.g., blindly aggregating revenue without filtering out a **24% return rate** or ignoring **"Ghost Revenue"** definitions).
+* **The Business Translation Gap:** Standard models fail to map ambiguous, high-level stakeholder jargon (such as "serial returners") to the correct certified table structures. 
 
-The business urgently needed a bridge between plain-English stakeholder questions and strictly governed financial metrics.
+The business urgently needed an architecture capable of bridging plain-English intent with strict data governance, ensuring **CFO-level accuracy** before any query is executed.
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 
