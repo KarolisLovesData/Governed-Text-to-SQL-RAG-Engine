@@ -32,15 +32,14 @@ To close this gap, I engineered a custom **Retrieval-Augmented Generation (RAG) 
 
 ## 🏗️ Data Architecture & Scale
 
-Translating natural language to SQL is highly complex within a **production-grade relational warehouse**. The AI engine is engineered to successfully navigate a comprehensive **Dataform Medallion architecture**, seamlessly joining interconnected entity domains (**users**, **distribution centers**, **products**, and **online events**). 
+The AI engine successfully navigates a production-grade **Dataform Medallion architecture**, seamlessly joining interconnected entity domains (**users**, **distribution centers**, **products**, and **online events**). 
 
 The underlying topology consists of:
+* **Raw Ingestion Layer:** 6 foundational source declarations managing event and transactional data.
+* **Silver Staging & Quality:** Standardized views protected by automated logic, including **logistical timeline validations** and **revenue status assertions**.
+* **Gold Analytical Marts:** 10+ certified dimensional models powering aggregations like **RFM segmentation**, **cohort retention**, and **global fulfillment tracking**.
 
-* **Raw Ingestion Layer:** 6 foundational source declarations managing continuous event and transactional data.
-* **Silver Staging & Quality:** Standardized views protected by strict automated logic, including **logistical timeline validations** and **revenue status assertions**.
-* **Gold Analytical Marts:** 10+ certified dimensional models powering complex downstream aggregations, such as **RFM segmentation**, **cohort retention**, and **global fulfillment tracking**.
-
-To prevent join hallucinations across this scale, an AI cannot simply read raw schema; to safely route user intent through validated transformation paths it must be constrained by the exact **dependency graph** shown below: 
+To prevent join hallucinations, the AI is restricted from reading raw schemas; instead, it routes user intent strictly through the validated transformation paths mapped in the **dependency graph** below: 
 
 <img src="visuals/Dataform Medallion Architecture DAG.png" alt="Dataform Medallion Architecture DAG" width="900">
 
