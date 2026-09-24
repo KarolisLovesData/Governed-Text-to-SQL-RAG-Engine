@@ -9,13 +9,13 @@
 
 ## ⚠️ Context & Business Problem: Hallucinated Analytics
 
-**APEX Activewear** processes 436K+ transactions and **$48.85M** in total volume. While the underlying data infrastructure is robust, non-technical stakeholders faced a critical bottleneck: actionable insights required the data team to write custom SQL.
+**APEX Activewear** processes 436K+ transactions totaling **$48.85M** in order volume. While the underlying BigQuery warehouse is robust, pointing standard Large Language Models (LLMs) directly at raw enterprise schemas introduces severe operational and financial risks.
 
-Pointing an out-of-the-box LLM directly at the warehouse creates a dangerous illusion of success. Baseline models generate syntactically flawless SQL, but introduce severe operational risk by failing on two critical fronts:
-* **Silent Financial Errors:** The AI confidently writes code that executes without errors, but calculates metrics incorrectly by missing unwritten business rules (e.g., blindly aggregating revenue without filtering out a **24% return rate** or ignoring **"Ghost Revenue"** definitions).
-* **The Business Translation Gap:** Standard models fail to map ambiguous, high-level stakeholder jargon (such as "serial returners") to the correct certified table structures. 
+Out-of-the-box LLMs create a dangerous illusion of success. They generate syntactically flawless SQL, but fail catastrophically on two critical fronts:
+* **Silent Financial Errors:** The AI confidently writes code that executes without syntax errors, but miscalculates metrics by ignoring unwritten transformation logic—such as blindly aggregating gross sales without filtering out a **24% return rate** or misinterpreting **"Ghost Revenue"** assertions.
+* **The Business Translation Gap:** Standard models fail to map ambiguous, plain-English stakeholder terminology (e.g., "serial returners" or "product drag") to certified gold-layer table structures.
 
-The business urgently needed an architecture capable of bridging plain-English intent with strict data governance, ensuring **CFO-level accuracy** before any query is executed.
+To eliminate these risks, the business required an architecture capable of translating plain-English intent into SQL while strictly enforcing live Dataform governance rules—guaranteeing **CFO-level accuracy** before any query is executed.
 
 ## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
 
