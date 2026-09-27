@@ -53,7 +53,7 @@ The system is evaluated against a test suite of **23 complex business queries** 
 | **Semantic Logic Match** *(LLM Judge)*¹ | 78.3% *(18/23)* | **91.3% *(21/23)*** | **+13.0%** elimination of unwritten financial logic errors |
 | **Average Latency** | ~9.45s | **~11.24s** | +1.79s tradeoff for multi-agent validation and hybrid search |
 
-> **¹ Evaluation Methodology (LLM-as-a-Judge):** Semantic accuracy was programmatically evaluated using **Gemini 3.7 Flash** as an automated judge. Generated SQL queries were compared against Ground Truth [data/eval_queries.json](eval_queries.json) queries to verify semantic logic, CTE calculations, and business metric alignment beyond strict syntax.
+> **¹ Evaluation Methodology (LLM-as-a-Judge):** Semantic accuracy was programmatically evaluated using **Gemini 3.7 Flash** as an automated judge. Generated SQL queries were compared against Ground Truth [eval_queries.json](data/eval_queries.json) queries to verify semantic logic, CTE calculations, and business metric alignment beyond strict syntax.
 ### 🧠 Failure Mode Analysis & Resolution
 
 1. **The Translation Gap (Schema Precision):** Standard LLM prompting failed to map non-technical jargon (e.g., "serial returners") to raw table names, yielding a 91.3% schema precision. Hybrid Vector Search mathematically bridges this gap, routing queries directly to certified analytical marts at **95.7% precision**.
