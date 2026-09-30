@@ -14,6 +14,7 @@
 Out-of-the-box LLMs create a dangerous illusion of success. They generate syntactically flawless SQL, but fail catastrophically on two critical fronts:
 * **Silent Financial Errors:** The AI confidently writes code that executes without syntax errors, but miscalculates metrics by ignoring unwritten transformation logic—such as blindly aggregating gross sales without filtering out a **24% return rate** or misinterpreting **"Ghost Revenue"** assertions.
 * **The Business Translation Gap:** Standard models fail to map ambiguous, plain-English stakeholder terminology (e.g., "serial returners" or "product drag") to certified gold-layer table structures.
+**Runaway Infrastructure Costs:** Poorly optimized SQL—such as unintentional fan-outs, sub-optimal joins, and unnecessary full table scans—quietly inflates cloud compute bills.  
 
 To eliminate these risks, the business required an architecture capable of translating plain-English intent into SQL while strictly enforcing live Dataform governance rules—guaranteeing **CFO-level accuracy** before any query is executed.
 
@@ -27,7 +28,7 @@ I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** 
 * **Dynamic Dataform & Schema Ingestion:** The indexing pipeline programmatically parses JSON **Golden Few-Shot Queries**, CSV governance rules, and BigQuery `INFORMATION_SCHEMA` to construct and maintain a dynamically updating semantic vector index.
 * **Native BigQuery Hybrid Search:** Pushed the search workload directly into the warehouse using BigQuery `VECTOR_SEARCH` (dense semantic intent) and BigQuery Text Indexes (sparse keyword matching). I engineered custom **Reciprocal Rank Fusion (RRF)** scoring natively in **Python** to mathematically merge these dataframes, optimizing context retrieval without relying on bloated external frameworks.
 * **Agentic Self-Healing AI Loop:** Operates as a dynamic balancing feedback mechanism driven by a **$0 BigQuery dry-run API**. If a `GoogleCloudError` (syntax error or schema mismatch) triggers, the system explicitly catches the exception and injects the exact error trace back into the LLM context for automated correction prior to final execution.
-* **Strict Governance Guardrails:** By restricting the AI exclusively to certified `gold_layer` and select `silver_layer` tables, the architecture creates a hard security boundary. This isolation prevents unauthorized cross-domain joins and unintended data exposure, ensuring stakeholders can query the warehouse with mathematical certainty that the generated SQL perfectly matches certified business definitions.
+**Strict Governance Guardrails:** Restricting the AI to certified `gold_layer` and select `silver_layer` tables prevents unauthorized cross-domain joins and ensures metrics align perfectly with business definitions. In production, this boundary is reinforced by masking PII natively at the database level and routing the AI strictly through anonymized analytical marts.
 
 
 ## 🏗️ Data Architecture & Scale
