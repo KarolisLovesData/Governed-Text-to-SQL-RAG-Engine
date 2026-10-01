@@ -68,10 +68,10 @@ The system is evaluated against a test suite of **23 complex business queries** 
 
 Visual proof is critical. The following terminal executions demonstrate the engine's ability to ingest complex business intent, navigate the Medallion architecture, and output cost-validated, production-ready SQL.
 
-### 🛡️ Sample 1: Proactive Cost Control & Pre-Execution Validation
-LLM-generated SQL poses severe financial risks if it blindly queries unoptimized datasets. To mitigate this, the engine intercepts the generated query and executes a **$0 BigQuery API dry-run**. 
+### 🛡️ Sample 1: Proactive Cost Control & Human-in-the-Loop Escalation
+LLM-generated SQL poses severe financial risks if it blindly queries unoptimized datasets. To mitigate this, the engine executes a **$0 BigQuery API dry-run** and a semantic confidence check *before* final execution. 
 
-*Notice in the terminal execution below how the agent validates syntax and explicitly estimates compute costs (MBs scanned) **before** final output.*
+*Notice in the terminal execution below how the agent intercepts an initial schema error, self-heals, and then validates the final query's compute cost (15.68 MB) and confidence score (0.92) before outputting the approved SQL.*
 
 **User Prompt:**
 > *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
