@@ -76,7 +76,7 @@ LLM-generated SQL poses severe financial risks if it blindly queries unoptimized
 **User Prompt:**
 > *List the country, total spend, and average order value for customers in the High churn risk tier who placed more than 3 orders in 2024.*
 
-<img src="visuals/app_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">
+<img src="visuals/visualsapp_in_action_01.png" alt="CLI Execution for Churn Risk Metrics" width="900">
 
 <details>
 <summary><b>🔍 View Validated Governed SQL</b></summary>
