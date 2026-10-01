@@ -82,33 +82,32 @@ LLM-generated SQL poses severe financial risks if it blindly queries unoptimized
 <summary><b>🔍 View Validated Governed SQL</b></summary>
 
 ```sql
-WITH user_order_stats AS (
+================ FINAL APPROVED SQL QUERY ================
+WITH qualifying_users AS (
   SELECT
     oi.user_id,
     u.country,
-    COUNT(DISTINCT oi.order_id) AS total_orders_2024,
-    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_spend_2024,
-    SUM(CAST(oi.sale_price AS NUMERIC)) / NULLIF(COUNT(DISTINCT oi.order_id), 0) AS average_order_value_2024
-  FROM `apex-activewear.silver_layer.stg_order_items` AS oi
-  JOIN `apex-activewear.silver_layer.stg_users` AS u ON oi.user_id = u.user_id
+    COUNT(DISTINCT oi.order_id) AS total_orders,
+    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_user_spend
+  FROM `apex-activewear.silver_layer.stg_order_items` oi
+  JOIN `apex-activewear.silver_layer.stg_users` u
+    ON oi.user_id = u.user_id
+  JOIN `apex-activewear.gold_layer.customer_churn_scores` cs
+    ON oi.user_id = cs.user_id
   WHERE EXTRACT(YEAR FROM oi.created_at) = 2024
     AND oi.status NOT IN ('Returned', 'Cancelled')
+    AND cs.is_churn_risk = TRUE
   GROUP BY oi.user_id, u.country
   HAVING COUNT(DISTINCT oi.order_id) > 3
-),
-churn_filtered_users AS (
-  SELECT user_id
-  FROM `apex-activewear.silver_layer.user_churn_data`
-  WHERE churn_risk_tier = 'High'
 )
 SELECT
-  uos.country,
-  SUM(uos.total_spend_2024) AS total_spend,
-  AVG(uos.average_order_value_2024) AS average_order_value
-FROM user_order_stats uos
-JOIN churn_filtered_users cfu ON uos.user_id = cfu.user_id
-GROUP BY uos.country
+  country,
+  ROUND(SUM(total_user_spend), 2) AS total_spend,
+  ROUND(SAFE_DIVIDE(SUM(total_user_spend), SUM(total_orders)), 2) AS average_order_value
+FROM qualifying_users
+GROUP BY country
 ORDER BY total_spend DESC;
+==========================================================
 ```
 
 </details>
