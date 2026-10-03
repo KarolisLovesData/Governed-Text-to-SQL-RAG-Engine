@@ -18,7 +18,7 @@ Out-of-the-box LLMs create a dangerous illusion of success. They generate syntac
 
 To eliminate these risks, the business required an architecture capable of translating plain-English intent into SQL while strictly enforcing live Dataform governance rules—guaranteeing **CFO-level accuracy** before any query is executed.
 
-## 💡 The Solution: A "Zero-Hallucination" Semantic Layer
+## 💡 The Solution: A Governed Semantic Layer
 
 I engineered a custom **Retrieval-Augmented Generation (RAG) Governance Agent** that intercepts natural-language intent and safely translates it into production-grade **BigQuery SQL**. This **Python CLI backend** serves as the foundational governance engine for future stakeholder-facing interfaces (e.g., **Streamlit** or Slackbots), enforcing **CFO-level accuracy** at scale.
 
