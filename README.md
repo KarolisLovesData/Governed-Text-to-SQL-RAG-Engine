@@ -1,4 +1,4 @@
-# Governed Text-to-SQL Agent for APEX Activewear
+# Governed Text-to-SQL RAG Engine for APEX Activewear
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg?logo=python&logoColor=white)
 ![Google Cloud](https://img.shields.io/badge/GCP-Cloud_Infrastructure-4285F4.svg?logo=googlecloud&logoColor=white)
