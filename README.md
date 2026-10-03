@@ -9,7 +9,7 @@
 
 ## ⚠️ Context & Business Problem: Hallucinated Analytics
 
-**APEX Activewear** is a simulated e-commerce dataset with 436K+ transactions totaling **$48.85M** in order volume. While the underlying BigQuery warehouse is robust, pointing standard Large Language Models (LLMs) directly at raw schemas introduces operational and financial risks.
+**APEX Activewear** is a simulated e-commerce dataset with 436K+ transactions totaling **$48.85M** in realized lifetime revenue. While the underlying BigQuery warehouse is robust, pointing standard Large Language Models (LLMs) directly at raw schemas introduces operational and financial risks.
 
 Out-of-the-box LLMs can look more reliable than they are. They generate SQL that runs, but fail on three fronts:
 * **Silent Financial Errors:** The model writes code that executes without syntax errors, but miscalculates metrics by ignoring unwritten transformation logic, such as aggregating gross sales without filtering out a **24% return rate** or misinterpreting **"Ghost Revenue"** assertions.
