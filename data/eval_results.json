@@ -1,0 +1,338 @@
+{
+    "summary": {
+        "total_test_cases": 23,
+        "dry_run_syntax_accuracy_pct": 100.0,
+        "schema_precision_pct": 95.7,
+        "semantic_logic_match_pct": 91.3,
+        "avg_latency_seconds": 11.24
+    },
+    "results": [
+        {
+            "id": "eval_01",
+            "question": "What is the total gross revenue, return loss, and total loss percentage by product category from the product leakage mart?",
+            "expected_tables": [
+                "mart_product_leakage"
+            ],
+            "golden_sql": "SELECT category, gross_revenue, return_loss, total_loss_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY total_loss_pct DESC;",
+            "generated_sql": "SELECT\n  category,\n  gross_revenue,\n  return_loss,\n  total_loss_pct\nFROM `apex-activewear.gold_layer.mart_product_leakage`\nORDER BY gross_revenue DESC;",
+            "latency_seconds": 10.8,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_02",
+            "question": "Show distribution center fulfillment latency and volume share percentage across distribution centers.",
+            "expected_tables": [
+                "mart_dc_fulfillment"
+            ],
+            "golden_sql": "SELECT distribution_center, volume_share_pct, avg_fulfillment_latency_days, avg_ofct_days FROM `apex-activewear.gold_layer.mart_dc_fulfillment` ORDER BY volume_share_pct DESC;",
+            "generated_sql": "SELECT\n  distribution_center,\n  volume_share_pct,\n  avg_fulfillment_latency_days\nFROM `apex-activewear.gold_layer.mart_dc_fulfillment`\nORDER BY volume_share_pct DESC;",
+            "latency_seconds": 9.04,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_03",
+            "question": "What is the total cohort users, total revenue, and average LTV per user grouped by acquisition source in LTV cohorts mart?",
+            "expected_tables": [
+                "mart_ltv_cohorts"
+            ],
+            "golden_sql": "SELECT acquisition_source, SUM(total_users_in_cohort) AS total_users, SUM(total_cohort_revenue) AS total_revenue, ROUND(AVG(ltv_per_user), 2) AS avg_ltv_per_user FROM `apex-activewear.gold_layer.mart_ltv_cohorts` GROUP BY acquisition_source ORDER BY total_revenue DESC;",
+            "generated_sql": "SELECT\n  acquisition_source,\n  SUM(total_users_in_cohort) AS total_cohort_users,\n  SUM(total_cohort_revenue) AS total_revenue,\n  AVG(ltv_per_user) AS avg_ltv_per_user\nFROM `apex-activewear.gold_layer.mart_ltv_cohorts`\nGROUP BY acquisition_source\nORDER BY total_revenue DESC;",
+            "latency_seconds": 9.59,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_ambiguous_01",
+            "question": "Which specific customer cohorts are stopping repeat orders after 3 months?",
+            "expected_tables": [
+                "mart_segmented_retention"
+            ],
+            "golden_sql": "SELECT segment, month_number, initial_users, active_users, retention_rate_pct FROM `apex-activewear.gold_layer.mart_segmented_retention` WHERE month_number = 3 ORDER BY retention_rate_pct ASC;",
+            "generated_sql": "SELECT\n  cohort_month,\n  initial_users,\n  active_users,\n  retention_rate\nFROM `apex-activewear.gold_layer.mart_cohort_retention`\nWHERE month_number = 3\n  AND (active_users = 0 OR retention_rate = 0)\nORDER BY cohort_month;",
+            "latency_seconds": 15.49,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": false,
+            "semantic_logic_pass": false
+        },
+        {
+            "id": "eval_ambiguous_02",
+            "question": "Show me our serial returners who keep placing orders but send everything back.",
+            "expected_tables": [
+                "user_churn_data"
+            ],
+            "golden_sql": "SELECT user_id, total_returns, return_rate_pct, total_historical_spend FROM `apex-activewear.silver_layer.user_churn_data` WHERE total_order_count >= 5 ORDER BY return_rate_pct DESC, total_historical_spend DESC LIMIT 10;",
+            "generated_sql": "SELECT\n  user_id,\n  total_order_count,\n  total_returns,\n  return_rate_pct,\n  total_historical_spend,\n  historical_aov\nFROM `apex-activewear.silver_layer.user_churn_data_current`\nWHERE total_order_count > 1\n  AND return_rate_pct >= 100\nORDER BY total_order_count DESC, total_returns DESC;",
+            "latency_seconds": 13.37,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": false
+        },
+        {
+            "id": "eval_ambiguous_03",
+            "question": "Which product lines are causing major financial drag due to high return costs?",
+            "expected_tables": [
+                "mart_product_leakage"
+            ],
+            "golden_sql": "SELECT category, gross_revenue, return_loss, total_loss_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY return_loss DESC;",
+            "generated_sql": "SELECT\n  category,\n  return_loss,\n  return_rate_pct,\n  gross_revenue,\n  net_revenue,\n  total_loss_pct\nFROM `apex-activewear.gold_layer.mart_product_leakage`\nORDER BY return_loss DESC;",
+            "latency_seconds": 10.5,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_04",
+            "question": "Show customer segment breakdown with user counts, average first basket size, and average 12-month LTV from the 12m segmentation mart.",
+            "expected_tables": [
+                "mart_ltv_12m_segmentation"
+            ],
+            "golden_sql": "SELECT customer_segment, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(first_basket_size), 2) AS avg_first_basket, ROUND(AVG(ltv_12_months), 2) AS avg_12m_ltv FROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation` GROUP BY customer_segment ORDER BY avg_12m_ltv DESC;",
+            "generated_sql": "SELECT\n  customer_segment,\n  COUNT(DISTINCT user_id) AS user_count,\n  ROUND(AVG(first_basket_size), 2) AS avg_first_basket_size,\n  ROUND(AVG(ltv_12_months), 2) AS avg_12m_ltv\nFROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation`\nGROUP BY customer_segment\nORDER BY user_count DESC;",
+            "latency_seconds": 9.3,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_05",
+            "question": "What is the customer count, average monetary value, and average recency days across RFM segments?",
+            "expected_tables": [
+                "mart_rfm_segments"
+            ],
+            "golden_sql": "SELECT rfm_segment, COUNT(DISTINCT user_id) AS user_count, ROUND(AVG(monetary_value), 2) AS avg_monetary_value, ROUND(AVG(recency_days), 1) AS avg_recency FROM `apex-activewear.gold_layer.mart_rfm_segments` GROUP BY rfm_segment ORDER BY user_count DESC;",
+            "generated_sql": "SELECT\n  rfm_segment,\n  COUNT(DISTINCT user_id) AS customer_count,\n  ROUND(AVG(monetary_value), 2) AS avg_monetary_value,\n  ROUND(AVG(recency_days), 2) AS avg_recency_days\nFROM `apex-activewear.gold_layer.mart_rfm_segments`\nGROUP BY rfm_segment\nORDER BY customer_count DESC;",
+            "latency_seconds": 9.28,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_06",
+            "question": "What is the retention rate percentage for month 3 across customer segments in segmented retention mart?",
+            "expected_tables": [
+                "mart_segmented_retention"
+            ],
+            "golden_sql": "SELECT segment, month_number, initial_users, active_users, retention_rate_pct FROM `apex-activewear.gold_layer.mart_segmented_retention` WHERE month_number = 3 ORDER BY retention_rate_pct DESC;",
+            "generated_sql": "SELECT\n  segment,\n  retention_rate_pct\nFROM `apex-activewear.gold_layer.mart_segmented_retention`\nWHERE month_number = 3\nORDER BY segment;",
+            "latency_seconds": 10.39,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_07",
+            "question": "What is the total realized revenue and total item count by product category for the Men department in 2023?",
+            "expected_tables": [
+                "stg_order_items",
+                "stg_products"
+            ],
+            "golden_sql": "SELECT p.category, COUNT(oi.order_item_id) AS total_items_sold, SUM(CAST(oi.sale_price AS NUMERIC)) AS total_realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE p.department = 'Men' AND EXTRACT(YEAR FROM oi.created_at) = 2023 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY p.category ORDER BY total_realized_revenue DESC;",
+            "generated_sql": "SELECT\n  p.category AS product_category,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_realized_revenue,\n  COUNT(oi.order_item_id) AS total_item_count\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_products` p\n  ON oi.product_id = p.product_id\nWHERE p.department = 'Men'\n  AND EXTRACT(YEAR FROM oi.created_at) = 2023\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY p.category\nORDER BY total_realized_revenue DESC;",
+            "latency_seconds": 15.79,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_08",
+            "question": "Compare total user count, average historical spend, and average return rate between churned and non-churned users.",
+            "expected_tables": [
+                "user_churn_data"
+            ],
+            "golden_sql": "SELECT has_churned, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(total_historical_spend), 2) AS avg_historical_spend, ROUND(AVG(return_rate_pct), 2) AS avg_return_rate FROM `apex-activewear.silver_layer.user_churn_data` GROUP BY has_churned;",
+            "generated_sql": "SELECT\n  has_churned,\n  COUNT(DISTINCT user_id) AS total_users,\n  ROUND(AVG(total_historical_spend), 2) AS avg_historical_spend,\n  ROUND(AVG(return_rate_pct), 2) AS avg_return_rate_pct\nFROM `apex-activewear.silver_layer.user_churn_data`\nGROUP BY has_churned\nORDER BY has_churned;",
+            "latency_seconds": 8.36,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_09",
+            "question": "Calculate month-over-month revenue growth rate by product category for 2023 using window functions.",
+            "expected_tables": [
+                "stg_order_items",
+                "stg_products"
+            ],
+            "golden_sql": "WITH monthly_metrics AS (SELECT p.category, EXTRACT(MONTH FROM oi.created_at) AS order_month, SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE EXTRACT(YEAR FROM oi.created_at) = 2023 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY p.category, order_month), mom AS (SELECT category, order_month, total_revenue, LAG(total_revenue) OVER (PARTITION BY category ORDER BY order_month) AS prev_revenue FROM monthly_metrics) SELECT category, order_month, total_revenue, ROUND(SAFE_DIVIDE(total_revenue - prev_revenue, prev_revenue) * 100, 2) AS mom_growth_pct FROM mom ORDER BY category, order_month;",
+            "generated_sql": "WITH monthly_category_revenue AS (\n  SELECT\n    p.category,\n    EXTRACT(MONTH FROM oi.created_at) AS order_month,\n    SUM(CAST(oi.sale_price AS NUMERIC)) AS monthly_revenue\n  FROM `apex-activewear.silver_layer.stg_order_items` oi\n  JOIN `apex-activewear.silver_layer.stg_products` p\n    ON oi.product_id = p.product_id\n  WHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n    AND oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY p.category, order_month\n),\nmom_calculations AS (\n  SELECT\n    category,\n    order_month,\n    monthly_revenue,\n    LAG(monthly_revenue) OVER (PARTITION BY category ORDER BY order_month) AS prev_month_revenue\n  FROM monthly_category_revenue\n)\nSELECT\n  category,\n  order_month,\n  monthly_revenue,\n  prev_month_revenue,\n  ROUND(SAFE_DIVIDE(monthly_revenue - prev_month_revenue, prev_month_revenue) * 100, 2) AS mom_revenue_growth_pct\nFROM mom_calculations\nORDER BY category, order_month;",
+            "latency_seconds": 13.83,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_10",
+            "question": "What is the total realized revenue, order count, and average gross margin by user country for 2024?",
+            "expected_tables": [
+                "stg_order_items",
+                "stg_users"
+            ],
+            "golden_sql": "SELECT u.country, COUNT(DISTINCT oi.order_id) AS total_orders, SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue, ROUND(AVG(oi.gross_margin_amount), 2) AS avg_gross_margin FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE EXTRACT(YEAR FROM oi.created_at) = 2024 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY u.country ORDER BY total_revenue DESC;",
+            "generated_sql": "SELECT\n  u.country,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_realized_revenue,\n  COUNT(DISTINCT oi.order_id) AS order_count,\n  ROUND(AVG(oi.gross_margin_amount), 2) AS avg_gross_margin\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_users` u\n  ON oi.user_id = u.user_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2024\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY u.country\nORDER BY total_realized_revenue DESC;",
+            "latency_seconds": 17.79,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_11",
+            "question": "List distribution center names and their total order volumes from staging orders.",
+            "expected_tables": [
+                "stg_orders",
+                "stg_distribution_centers"
+            ],
+            "golden_sql": "SELECT dc.name AS dc_name, COUNT(o.order_id) AS total_orders FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_distribution_centers` dc ON o.distribution_center_id = dc.id GROUP BY dc.name ORDER BY total_orders DESC;",
+            "generated_sql": "SELECT\n  dc.name AS distribution_center_name,\n  COUNT(o.order_id) AS total_order_volume\nFROM `apex-activewear.silver_layer.stg_orders` AS o\nJOIN `apex-activewear.silver_layer.stg_distribution_centers` AS dc\n  ON o.distribution_center_id = dc.id\nGROUP BY dc.name\nORDER BY total_order_volume DESC;",
+            "latency_seconds": 8.45,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_12",
+            "question": "Show total orders and timeline anomaly order counts grouped by traffic source from int order attribution.",
+            "expected_tables": [
+                "int_order_attribution"
+            ],
+            "golden_sql": "SELECT traffic_source, COUNT(order_id) AS total_orders, SUM(CASE WHEN has_timeline_anomaly THEN 1 ELSE 0 END) AS anomaly_orders FROM `apex-activewear.silver_layer.int_order_attribution` GROUP BY traffic_source ORDER BY total_orders DESC;",
+            "generated_sql": "SELECT\n  traffic_source,\n  COUNT(DISTINCT order_id) AS total_orders,\n  COUNT(DISTINCT CASE WHEN has_timeline_anomaly THEN order_id END) AS timeline_anomaly_orders\nFROM `apex-activewear.silver_layer.int_order_attribution`\nGROUP BY traffic_source\nORDER BY total_orders DESC;",
+            "latency_seconds": 10.7,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_13",
+            "question": "What is the total user count, average lifetime orders, and average lifetime revenue by acquisition source in int user lifecycle?",
+            "expected_tables": [
+                "int_user_lifecycle"
+            ],
+            "golden_sql": "SELECT acquisition_source, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(lifetime_orders), 1) AS avg_lifetime_orders, ROUND(AVG(lifetime_revenue), 2) AS avg_lifetime_revenue FROM `apex-activewear.silver_layer.int_user_lifecycle` GROUP BY acquisition_source ORDER BY avg_lifetime_revenue DESC;",
+            "generated_sql": "SELECT\n  acquisition_source,\n  COUNT(DISTINCT user_id) AS total_user_count,\n  ROUND(AVG(lifetime_orders), 2) AS avg_lifetime_orders,\n  ROUND(AVG(lifetime_revenue), 2) AS avg_lifetime_revenue\nFROM `apex-activewear.silver_layer.int_user_lifecycle`\nGROUP BY acquisition_source\nORDER BY total_user_count DESC;",
+            "latency_seconds": 8.29,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_14",
+            "question": "Top 10 users with highest return rates who have placed at least 5 orders in user churn data.",
+            "expected_tables": [
+                "user_churn_data"
+            ],
+            "golden_sql": "SELECT user_id, total_returns, return_rate_pct, total_historical_spend FROM `apex-activewear.silver_layer.user_churn_data` WHERE total_order_count >= 5 ORDER BY return_rate_pct DESC, total_historical_spend DESC LIMIT 10;",
+            "generated_sql": "SELECT\n  user_id,\n  total_order_count,\n  total_returns,\n  return_rate_pct\nFROM `apex-activewear.silver_layer.user_churn_data`\nWHERE total_order_count >= 5\nORDER BY return_rate_pct DESC\nLIMIT 10;",
+            "latency_seconds": 9.57,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_15",
+            "question": "Count total online web events by event type and traffic source for 2024.",
+            "expected_tables": [
+                "stg_online_events"
+            ],
+            "golden_sql": "SELECT event_type, traffic_source, COUNT(*) AS event_count FROM `apex-activewear.silver_layer.stg_online_events` WHERE EXTRACT(YEAR FROM created_at) = 2024 GROUP BY event_type, traffic_source ORDER BY event_count DESC;",
+            "generated_sql": "SELECT\n  event_type,\n  traffic_source,\n  COUNT(*) AS total_events\nFROM `apex-activewear.silver_layer.stg_online_events`\nWHERE EXTRACT(YEAR FROM created_at) = 2024\nGROUP BY event_type, traffic_source\nORDER BY total_events DESC;",
+            "latency_seconds": 8.53,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_16",
+            "question": "Show brand level average retail price and unit margin for the 'Tops & Tees' category for brands with at least 3 products.",
+            "expected_tables": [
+                "stg_products"
+            ],
+            "golden_sql": "SELECT brand, COUNT(product_id) AS product_count, ROUND(AVG(retail_price), 2) AS avg_retail_price, ROUND(AVG(retail_price - cost), 2) AS avg_unit_margin FROM `apex-activewear.silver_layer.stg_products` WHERE category = 'Tops & Tees' GROUP BY brand HAVING COUNT(product_id) >= 3 ORDER BY avg_unit_margin DESC;",
+            "generated_sql": "SELECT\n  brand,\n  ROUND(AVG(retail_price), 2) AS avg_retail_price,\n  ROUND(AVG(retail_price - cost), 2) AS avg_unit_margin\nFROM `apex-activewear.silver_layer.stg_products`\nWHERE category = 'Tops & Tees'\nGROUP BY brand\nHAVING COUNT(product_id) >= 3\nORDER BY avg_unit_margin DESC;",
+            "latency_seconds": 8.77,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_17",
+            "question": "Compare quarter-over-quarter revenue by user acquisition source for 2023.",
+            "expected_tables": [
+                "stg_order_items",
+                "stg_users"
+            ],
+            "golden_sql": "WITH qtr AS (SELECT u.acquisition_source, EXTRACT(QUARTER FROM oi.created_at) AS order_quarter, SUM(CAST(oi.sale_price AS NUMERIC)) AS revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE EXTRACT(YEAR FROM oi.created_at) = 2023 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY u.acquisition_source, order_quarter) SELECT acquisition_source, order_quarter, revenue, LAG(revenue) OVER (PARTITION BY acquisition_source ORDER BY order_quarter) AS prev_qtr_revenue FROM qtr ORDER BY acquisition_source, order_quarter;",
+            "generated_sql": "WITH quarterly_metrics AS (\n  SELECT\n    u.acquisition_source,\n    EXTRACT(QUARTER FROM oi.created_at) AS order_quarter,\n    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue\n  FROM `apex-activewear.silver_layer.stg_order_items` oi\n  JOIN `apex-activewear.silver_layer.stg_users` u\n    ON oi.user_id = u.user_id\n  WHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n    AND oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY u.acquisition_source, order_quarter\n),\nqoq_calculations AS (\n  SELECT\n    acquisition_source,\n    order_quarter,\n    total_revenue,\n    LAG(total_revenue) OVER (PARTITION BY acquisition_source ORDER BY order_quarter) AS prev_quarter_revenue\n  FROM quarterly_metrics\n)\nSELECT\n  acquisition_source,\n  order_quarter,\n  total_revenue,\n  prev_quarter_revenue,\n  ROUND(SAFE_DIVIDE(total_revenue - prev_quarter_revenue, prev_quarter_revenue) * 100, 2) AS revenue_growth_pct\nFROM qoq_calculations\nORDER BY acquisition_source, order_quarter;",
+            "latency_seconds": 11.5,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_18",
+            "question": "Show cohort retention rates for cohorts starting with over 1000 initial users up to month 6.",
+            "expected_tables": [
+                "mart_cohort_retention"
+            ],
+            "golden_sql": "SELECT cohort_month, month_number, initial_users, active_users, retention_rate FROM `apex-activewear.gold_layer.mart_cohort_retention` WHERE initial_users > 1000 AND month_number <= 6 ORDER BY cohort_month, month_number;",
+            "generated_sql": "SELECT\n  cohort_month,\n  month_number,\n  initial_users,\n  active_users,\n  retention_rate\nFROM `apex-activewear.gold_layer.mart_cohort_retention`\nWHERE initial_users > 1000\n  AND month_number <= 6\nORDER BY cohort_month, month_number;",
+            "latency_seconds": 8.36,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_19",
+            "question": "What is the breakdown of order counts and share percentage across order statuses in staging orders?",
+            "expected_tables": [
+                "stg_orders"
+            ],
+            "golden_sql": "SELECT status, COUNT(order_id) AS order_count, ROUND(100.0 * COUNT(order_id) / SUM(COUNT(order_id)) OVER(), 2) AS order_share_pct FROM `apex-activewear.silver_layer.stg_orders` GROUP BY status ORDER BY order_count DESC;",
+            "generated_sql": "SELECT\n  status,\n  COUNT(order_id) AS order_count,\n  ROUND(100.0 * COUNT(order_id) / SUM(COUNT(order_id)) OVER(), 2) AS share_pct\nFROM `apex-activewear.silver_layer.stg_orders`\nGROUP BY status\nORDER BY order_count DESC;",
+            "latency_seconds": 8.69,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        },
+        {
+            "id": "eval_20",
+            "question": "Select global fulfillment metrics including average latency, warehouse share of total time percentage, and projected OFCT.",
+            "expected_tables": [
+                "mart_global_fulfillment"
+            ],
+            "golden_sql": "SELECT avg_fulfillment_latency_days, avg_ofct_days, warehouse_share_of_total_time_pct, projected_ofct_after_fix FROM `apex-activewear.gold_layer.mart_global_fulfillment`;",
+            "generated_sql": "SELECT\n  avg_fulfillment_latency_days,\n  warehouse_share_of_total_time_pct,\n  projected_ofct_after_fix\nFROM `apex-activewear.gold_layer.mart_global_fulfillment`",
+            "latency_seconds": 22.13,
+            "dry_run_pass": true,
+            "dry_run_error": null,
+            "schema_precision_pass": true,
+            "semantic_logic_pass": true
+        }
+    ]
+}

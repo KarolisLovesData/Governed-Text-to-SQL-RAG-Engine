@@ -18,6 +18,24 @@
     "golden_sql": "SELECT acquisition_source, SUM(total_users_in_cohort) AS total_users, SUM(total_cohort_revenue) AS total_revenue, ROUND(AVG(ltv_per_user), 2) AS avg_ltv_per_user FROM `apex-activewear.gold_layer.mart_ltv_cohorts` GROUP BY acquisition_source ORDER BY total_revenue DESC;"
   },
   {
+    "id": "eval_ambiguous_01",
+    "question": "Which specific customer cohorts are stopping repeat orders after 3 months?",
+    "expected_tables": ["mart_segmented_retention"],
+    "golden_sql": "SELECT segment, month_number, initial_users, active_users, retention_rate_pct FROM `apex-activewear.gold_layer.mart_segmented_retention` WHERE month_number = 3 ORDER BY retention_rate_pct ASC;"
+  },
+  {
+    "id": "eval_ambiguous_02",
+    "question": "Show me our serial returners who keep placing orders but send everything back.",
+    "expected_tables": ["user_churn_data"],
+    "golden_sql": "SELECT user_id, total_returns, return_rate_pct, total_historical_spend FROM `apex-activewear.silver_layer.user_churn_data` WHERE total_order_count >= 5 ORDER BY return_rate_pct DESC, total_historical_spend DESC LIMIT 10;"
+  },
+  {
+    "id": "eval_ambiguous_03",
+    "question": "Which product lines are causing major financial drag due to high return costs?",
+    "expected_tables": ["mart_product_leakage"],
+    "golden_sql": "SELECT category, gross_revenue, return_loss, total_loss_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY return_loss DESC;"
+  },
+  {
     "id": "eval_04",
     "question": "Show customer segment breakdown with user counts, average first basket size, and average 12-month LTV from the 12m segmentation mart.",
     "expected_tables": ["mart_ltv_12m_segmentation"],
