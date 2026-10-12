@@ -1,0 +1,326 @@
+{
+  "summary": {
+    "audit_model": "claude-opus-5-5",
+    "audited": 28,
+    "agree": 28,
+    "agreement_pct": 100.0,
+    "cohen_kappa": 1.0,
+    "disagreements": [],
+    "judge_usage": {
+      "calls": 28,
+      "cache_hits": 0,
+      "input_tokens": 24743,
+      "output_tokens": 6151
+    }
+  },
+  "results": [
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_ambiguous_01",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query reads mart_cohort_retention by cohort_month rather than mart_segmented_retention by segment, and it filters to month 4 cohorts with zero active users instead of ranking month-3 retention by segment.",
+      "sonnet_reason": "The generated query reads mart_cohort_retention (time-based cohort months) instead of mart_segmented_retention (customer segments), and it filters on month 4 with active_users = 0 rather than reporting month 3 retention by segment.",
+      "opus_failure_type": "wrong_table",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_ambiguous_02",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query uses an order-count threshold of more than 1 instead of the ground truth's 5 or more, and adds a 100% return-rate filter. It also queries the user_churn_data_current table rather than user_churn_data, so it returns a different set of serial returners than the ground truth's top 1",
+      "sonnet_reason": "The generated query reads a different table (user_churn_data_current instead of user_churn_data), uses a looser order threshold (>1 instead of >=5), adds a 100% return-rate filter that the ground truth does not apply, and orders by order count instead of return rate and spend with no top-10 limit.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_10",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query computes average gross margin as a percentage of sale price, while the ground truth averages the absolute gross_margin_amount per item, so the margin metric differs.",
+      "sonnet_reason": "Table, joins, 2024 filter and status exclusions match the ground truth, but the generated query returns average gross margin as a per-item percentage ((sale_price - cost)/sale_price * 100). The ground truth averages gross_margin_amount in currency, so the metric and its units differ.",
+      "opus_failure_type": "wrong_metric",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_ambiguous_01",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query reads mart_cohort_retention instead of the segmented retention mart and filters month_number > 3 with a zero-activity HAVING clause, so it does not return segment-level month-3 retention rates.",
+      "sonnet_reason": "The generated query reads a different table (mart_cohort_retention instead of mart_segmented_retention), so it returns no segment breakdown, no retention rates, and it filters month_number > 3 with HAVING MAX(active_users)=0 instead of looking at month 3 specifically.",
+      "opus_failure_type": "wrong_table",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_ambiguous_02",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query requires only more than one order instead of the ground truth's minimum of 5 orders, and it keeps only users who returned 100% of items rather than ranking users by return rate. It also aggregates raw stg_order_items instead of the curated user_churn_data table and omits return r",
+      "sonnet_reason": "The generated query reads a different table (stg_order_items rather than user_churn_data), uses a different threshold (more than 1 order instead of at least 5), requires a 100% item return rate instead of ranking by return_rate_pct, omits spend and return rate metrics, and has no LIMIT 10.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_09",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query does not exclude Returned and Cancelled order items, so its revenue and the MoM growth rates built on it are wrong.",
+      "sonnet_reason": "The generated query omits the business-rule filter that excludes Returned and Cancelled order items (status NOT IN ('Returned','Cancelled')), so its revenue and growth rates are inflated and differ from the ground truth.",
+      "opus_failure_type": "missing_business_rule",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b08",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query drops the is_realized_revenue = TRUE filter, so returned and cancelled items count toward revenue, and it also checks only the 'Direct' source instead of every traffic source.",
+      "sonnet_reason": "The generated query drops the is_realized_revenue = TRUE filter, so returned and cancelled items count toward revenue, and it only returns the 'Direct' source instead of every source above 20%.",
+      "opus_failure_type": "missing_business_rule",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b10",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query ranks distribution centers by avg_ofct_days instead of avg_fulfillment_latency_days, the bottleneck metric the ground truth uses, so it can return a different distribution center.",
+      "sonnet_reason": "The generated query ranks distribution centers by avg_ofct_days, while the ground truth ranks by avg_fulfillment_latency_days, so it can return a different DC as the bottleneck.",
+      "opus_failure_type": "wrong_metric",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b12",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query adds a WHERE lifetime_orders >= 1 filter that the ground truth does not have, so any zero-order users in int_user_lifecycle drop out of the denominator and the repeat-customer percentage can differ.",
+      "sonnet_reason": "The generated query adds WHERE lifetime_orders >= 1, shrinking the denominator to purchasers only, whereas the ground truth divides by all users in int_user_lifecycle, so the percentage will differ if non-purchasing users exist.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b04",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query divides pre-aggregated cohort revenue by total lifetime orders from mart_ltv_cohorts instead of applying the is_realized_revenue = TRUE filter at order-item level, so there is no guarantee that both the numerator and the order count exclude returned or cancelled items as the grou",
+      "sonnet_reason": "The generated query reads the pre-aggregated mart_ltv_cohorts table instead of order items, so it cannot be shown to apply the is_realized_revenue filter (excluding returned and cancelled items) that the ground truth uses, and its cohort revenue and order counts may be defined differently.",
+      "opus_failure_type": "missing_business_rule",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b07",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query uses `sale_price <= 0` instead of the ground truth's `sale_price < 0`, so it also counts zero-priced items as invalid, which changes the business-rule threshold and can inflate the count.",
+      "sonnet_reason": "The generated query changes the invalid-price threshold from `sale_price < 0` to `sale_price <= 0`, so it also counts zero-priced items that the ground truth treats as valid and can return a different count.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b08",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query computes each traffic source's revenue share correctly, but it omits the ground truth's 20% concentration threshold (share_pct > 20) that defines over-dependence, so it lists every source instead of only the over-concentrated ones.",
+      "sonnet_reason": "The generated query omits the ground truth's threshold filter (share_pct > 20), so it returns every traffic source instead of only the over-dependent ones, even though the tables, realized-revenue filter and share calculation match.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b10",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query picks the top distribution center by avg_ofct_days instead of avg_fulfillment_latency_days, so it can return a different distribution center than the ground truth's latency-based bottleneck.",
+      "sonnet_reason": "The generated query ranks distribution centers by avg_ofct_days instead of avg_fulfillment_latency_days, so it can return a different DC than the ground truth, which defines the bottleneck by fulfillment latency.",
+      "opus_failure_type": "wrong_metric",
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b12",
+      "sonnet_pass": false,
+      "opus_verdict": "FAIL",
+      "opus_reason": "The generated query adds a `lifetime_orders > 0` filter that the ground truth does not have, so if `int_user_lifecycle` contains users with no orders, the denominator shrinks and the repeat-customer percentage is inflated.",
+      "sonnet_reason": "The generated query adds WHERE lifetime_orders > 0, which shrinks the denominator to customers with at least one order, whereas the ground truth uses all users in the lifecycle table, so the percentage will differ.",
+      "opus_failure_type": "wrong_filter",
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_09",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query matches the ground truth in tables, the 2023 filter, the Returned/Cancelled exclusion, the category-by-month grain and the LAG-based MoM growth calculation, differing only in aliases and an extra prev_month_revenue column.",
+      "sonnet_reason": "The generated query uses the same tables, join, 2023 filter, Returned/Cancelled exclusion, category-month grain, LAG window partitioned by category and growth formula as the ground truth; it only renames columns and adds prev_month_revenue.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_10",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same tables, 2024 filter, country grain and metrics, and its is_realized_revenue = TRUE flag appears to encode the same rule as excluding Returned and Cancelled items, though that equivalence cannot be fully verified from the SQL alone.",
+      "sonnet_reason": "It uses the same tables, join, 2024 filter and grain as the ground truth. The `is_realized_revenue` flag very likely encodes the same Returned/Cancelled exclusion, though this is assumed, not shown. The metrics match, apart from the omitted rounding and cast, which are cosmetic.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b04",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same tables, join, grain and AOV formula (realized revenue divided by distinct orders), and its status NOT IN ('Returned','Cancelled') filter expresses the realized-revenue rule that is_realized_revenue encodes, assuming that flag is defined the same way.",
+      "sonnet_reason": "Same tables, join, grouping and metric (SUM(sale_price) / COUNT(DISTINCT order_id)) as the ground truth. The status NOT IN ('Returned','Cancelled') filter matches the standard realized-revenue rule, so it should be equivalent to is_realized_revenue = TRUE.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b07",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same table and the same invalid-price filter (sale_price < 0 OR NULL); listing the matching rows answers the existence question as well as a count would.",
+      "sonnet_reason": "The generated query reads the same table and applies the identical invalid-price filter (sale_price < 0 OR NULL); returning the offending rows instead of a count still answers whether any exist.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_19",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query matches the ground truth on table, grain, metrics and the window-based share calculation, and differs only in a column alias.",
+      "sonnet_reason": "The generated query reads the same stg_orders table, groups by status, and computes the same order count and rounded share percentage; only the alias differs.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b02",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same tables, join, 2024 year filter and per-country grain, and its status NOT IN ('Returned','Cancelled') filter applies the stated business rule that the ground truth's is_realized_revenue flag appears to encode.",
+      "sonnet_reason": "Same tables, join, 2024 filter and country grain as the ground truth; excluding Returned and Cancelled statuses matches the realized-revenue rule, which is presumably what is_realized_revenue encodes.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_14",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same user_churn_data table, applies the same at-least-5-orders filter, and returns the top 10 users by return_rate_pct; the missing extra columns and spend tiebreaker were not asked for in the question.",
+      "sonnet_reason": "The generated query reads the same table and applies the same total_order_count >= 5 filter. It ranks by return_rate_pct DESC with LIMIT 10 and returns user_id and return_rate_pct. It omits the ground truth's tie-breaker and two extra columns, which is acceptable.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_12",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same int_order_attribution table, groups by traffic_source, and computes total and timeline-anomaly order counts; its COUNT DISTINCT matches the ground truth's counts provided the table holds one row per order, as an order attribution model typically does.",
+      "sonnet_reason": "Same table, grouping and ordering; COUNT(DISTINCT order_id) and the distinct count of anomaly orders match the ground truth's counts, since order_id is the grain of this attribution table (one row per order), and the anomaly flag is handled equivalently.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "engine",
+      "id": "eval_b03",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same tables, year filter and brand grain, and its exclusion of Returned and Cancelled items applies the same realized-revenue rule that the ground truth encodes in the is_realized_revenue flag.",
+      "sonnet_reason": "Same tables, join, 2023 filter, grain (brand) and metric (sum of sale_price, top 5). Excluding Returned and Cancelled statuses matches the realized-revenue rule in the ground truth. The only differences are the CAST to NUMERIC and the missing rounding.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_13",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same table, groups by acquisition_source, and computes the same distinct user count and lifetime averages; it differs only in alias names, rounding precision and ordering.",
+      "sonnet_reason": "Same table, grouping, and metrics (distinct user count, average lifetime orders, average lifetime revenue); differences are only rounding precision for orders (2 vs 1 decimal) and ordering, which are permitted.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_01",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same product leakage mart and returns the same category, gross_revenue, return_loss and total_loss_pct columns at the same grain, differing only in sort order.",
+      "sonnet_reason": "The generated query reads the same mart table and returns the same columns at the same grain with no filters; only the ORDER BY differs, which the question does not specify.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "baseline",
+      "id": "eval_01",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same mart table and returns the same category, gross_revenue, return_loss and total_loss_pct columns at the same grain; it differs only in the omitted project qualifier and the missing ORDER BY, and neither changes the answer.",
+      "sonnet_reason": "The generated query selects the same columns from the same mart table as the ground truth; only the project prefix and the ordering differ, and neither changes the data returned.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "A",
+      "system": "engine",
+      "id": "eval_16",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query uses the same table, the same category filter, the same brand grain, the same metrics and the same at-least-3-products threshold; the extra `brand IS NOT NULL` only drops an unbranded group that is not a real brand, and the different ordering is allowed.",
+      "sonnet_reason": "Same table, category filter, grain, metrics and HAVING threshold as the ground truth; the extra brand IS NOT NULL filter and the different ORDER BY do not change the business answer.",
+      "opus_failure_type": null,
+      "agree": true
+    },
+    {
+      "set": "B",
+      "system": "baseline",
+      "id": "eval_b09",
+      "sonnet_pass": true,
+      "opus_verdict": "PASS",
+      "opus_reason": "The generated query reads the same gold_layer.customer_churn_scores table, applies the same is_churn_risk = TRUE filter, and ranks the top 10 by total_historical_spend; the only difference is that it omits the project prefix.",
+      "sonnet_reason": "The generated query selects the same columns from the same customer_churn_scores table, applies the same is_churn_risk = TRUE filter, orders by total_historical_spend DESC and limits to 10. The only difference is the omitted project prefix, which does not change the result.",
+      "opus_failure_type": null,
+      "agree": true
+    }
+  ]
+}

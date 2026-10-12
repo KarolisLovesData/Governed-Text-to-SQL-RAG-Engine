@@ -1,0 +1,12 @@
+# secrets
+.env
+.env.*
+
+# local environment / IDE / caches
+.venv/
+.idea/
+__pycache__/
+*.pyc
+
+# regenerated on every run (cost-saving cache of judge verdicts)
+results/judge_cache.json

@@ -1,0 +1,52 @@
+{
+  "summary": {
+    "system": "Governed RAG engine",
+    "run_at_utc": "2026-10-10T21:12:29+00:00",
+    "judge_model": "claude-sonnet-5-5",
+    "judge_prompt_version": "v1",
+    "total_test_cases": 1,
+    "dry_run_syntax_accuracy_pct": 100.0,
+    "schema_precision_pct": 100.0,
+    "semantic_logic_match_pct": 0.0,
+    "semantic_pass": 0,
+    "semantic_evaluated": 1,
+    "semantic_wilson95_pct": [
+      0.0,
+      79.3
+    ],
+    "judge_errors": 0,
+    "failure_types": {
+      "wrong_metric": 1
+    },
+    "avg_latency_seconds": 24.59,
+    "judge_usage": {
+      "calls": 2,
+      "cache_hits": 0,
+      "input_tokens": 1838,
+      "output_tokens": 416
+    },
+    "escalated_questions": 0
+  },
+  "results": [
+    {
+      "id": "eval_03",
+      "question": "What is the total cohort users, total revenue, and average LTV per user grouped by acquisition source in LTV cohorts mart?",
+      "expected_tables": [
+        "mart_ltv_cohorts"
+      ],
+      "golden_sql": "SELECT acquisition_source, SUM(total_users_in_cohort) AS total_users, SUM(total_cohort_revenue) AS total_revenue, ROUND(AVG(ltv_per_user), 2) AS avg_ltv_per_user FROM `apex-activewear.gold_layer.mart_ltv_cohorts` GROUP BY acquisition_source ORDER BY total_revenue DESC;",
+      "generated_sql": "SELECT\n  acquisition_source,\n  SUM(total_users_in_cohort) AS total_cohort_users,\n  ROUND(SUM(total_cohort_revenue), 2) AS total_revenue,\n  ROUND(SAFE_DIVIDE(SUM(total_cohort_revenue), SUM(total_users_in_cohort)), 2) AS avg_ltv_per_user\nFROM `apex-activewear.gold_layer.mart_ltv_cohorts`\nGROUP BY acquisition_source\nORDER BY total_cohort_users DESC;",
+      "latency_seconds": 24.59,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query computes avg_ltv_per_user as a weighted ratio (SUM(revenue)/SUM(users)), whereas the ground truth uses AVG(ltv_per_user) across cohort rows, so the headline metric returns different values.",
+      "failure_type": "wrong_metric",
+      "judge_model": "claude-sonnet-5-5"
+    }
+  ]
+}

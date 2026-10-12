@@ -1,0 +1,498 @@
+{
+  "summary": {
+    "system": "Governed RAG engine",
+    "run_at_utc": "2026-10-10T23:14:16+00:00",
+    "judge_model": "claude-sonnet-5-5",
+    "judge_prompt_version": "v1",
+    "total_test_cases": 23,
+    "dry_run_syntax_accuracy_pct": 100.0,
+    "schema_precision_pct": 91.3,
+    "semantic_logic_match_pct": 82.6,
+    "semantic_pass": 19,
+    "semantic_evaluated": 23,
+    "semantic_wilson95_pct": [
+      62.9,
+      93.0
+    ],
+    "judge_errors": 0,
+    "failure_types": {
+      "wrong_metric": 2,
+      "wrong_table": 2
+    },
+    "avg_latency_seconds": 15.6,
+    "judge_usage": {
+      "calls": 10,
+      "cache_hits": 13,
+      "input_tokens": 9558,
+      "output_tokens": 2154
+    },
+    "escalated_questions": 0
+  },
+  "results": [
+    {
+      "id": "eval_01",
+      "question": "What is the total gross revenue, return loss, and total loss percentage by product category from the product leakage mart?",
+      "expected_tables": [
+        "mart_product_leakage"
+      ],
+      "golden_sql": "SELECT category, gross_revenue, return_loss, total_loss_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY total_loss_pct DESC;",
+      "generated_sql": "SELECT\n  category,\n  gross_revenue,\n  return_loss,\n  total_loss_pct\nFROM `apex-activewear.gold_layer.mart_product_leakage`\nORDER BY gross_revenue DESC;",
+      "latency_seconds": 26.41,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same mart table and returns the same columns at the same grain with no filters; only the ORDER BY differs, which the question does not specify.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_02",
+      "question": "Show distribution center fulfillment latency and volume share percentage across distribution centers.",
+      "expected_tables": [
+        "mart_dc_fulfillment"
+      ],
+      "golden_sql": "SELECT distribution_center, volume_share_pct, avg_fulfillment_latency_days, avg_ofct_days FROM `apex-activewear.gold_layer.mart_dc_fulfillment` ORDER BY volume_share_pct DESC;",
+      "generated_sql": "SELECT\n  distribution_center,\n  avg_fulfillment_latency_days,\n  volume_share_pct\nFROM `apex-activewear.gold_layer.mart_dc_fulfillment`\nORDER BY volume_share_pct DESC;",
+      "latency_seconds": 11.03,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same mart table and returns distribution_center, avg_fulfillment_latency_days and volume_share_pct with the same ordering; it omits only avg_ofct_days, which the question does not ask for.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_03",
+      "question": "What is the total cohort users, total revenue, and average LTV per user grouped by acquisition source in LTV cohorts mart?",
+      "expected_tables": [
+        "mart_ltv_cohorts"
+      ],
+      "golden_sql": "SELECT acquisition_source, SUM(total_users_in_cohort) AS total_users, SUM(total_cohort_revenue) AS total_revenue, ROUND(AVG(ltv_per_user), 2) AS avg_ltv_per_user FROM `apex-activewear.gold_layer.mart_ltv_cohorts` GROUP BY acquisition_source ORDER BY total_revenue DESC;",
+      "generated_sql": "SELECT\n  acquisition_source,\n  SUM(total_users_in_cohort) AS total_cohort_users,\n  ROUND(SUM(total_cohort_revenue), 2) AS total_revenue,\n  ROUND(SAFE_DIVIDE(SUM(total_cohort_revenue), SUM(total_users_in_cohort)), 2) AS avg_ltv_per_user\nFROM `apex-activewear.gold_layer.mart_ltv_cohorts`\nGROUP BY acquisition_source\nORDER BY total_cohort_users DESC;",
+      "latency_seconds": 16.03,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query computes avg_ltv_per_user as a weighted ratio (SUM(revenue)/SUM(users)), whereas the ground truth uses AVG(ltv_per_user) across cohort rows, so the headline metric returns different values.",
+      "failure_type": "wrong_metric",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_ambiguous_01",
+      "question": "Which specific customer cohorts are stopping repeat orders after 3 months?",
+      "expected_tables": [
+        "mart_segmented_retention"
+      ],
+      "golden_sql": "SELECT segment, month_number, initial_users, active_users, retention_rate_pct FROM `apex-activewear.gold_layer.mart_segmented_retention` WHERE month_number = 3 ORDER BY retention_rate_pct ASC;",
+      "generated_sql": "WITH cohort_monthly AS (\n  SELECT\n    cohort_month,\n    initial_users,\n    MAX(CASE WHEN month_number = 3 THEN active_users ELSE 0 END) AS month_3_active_users,\n    MAX(CASE WHEN month_number = 3 THEN retention_rate ELSE 0 END) AS month_3_retention_rate,\n    MAX(CASE WHEN month_number > 3 THEN active_users ELSE 0 END) AS post_month_3_active_users,\n    COUNTIF(month_number > 3) AS post_month_3_periods\n  FROM `apex-activewear.gold_layer.mart_cohort_retention`\n  GROUP BY cohort_month, initial_users\n)\nSELECT\n  cohort_month,\n  initial_users,\n  month_3_active_users,\n  month_3_retention_rate\nFROM cohort_monthly\nWHERE month_3_active_users > 0\n  AND post_month_3_active_users = 0\n  AND post_month_3_periods > 0\nORDER BY cohort_month;",
+      "latency_seconds": 53.29,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": false,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query reads mart_cohort_retention (time-based cohorts by month) instead of mart_segmented_retention (customer segments), and it filters to cohorts with zero post-month-3 activity rather than returning month 3 retention for each segment ordered by lowest retention.",
+      "failure_type": "wrong_table",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_ambiguous_02",
+      "question": "Show me our serial returners who keep placing orders but send everything back.",
+      "expected_tables": [
+        "user_churn_data"
+      ],
+      "golden_sql": "SELECT user_id, total_returns, return_rate_pct, total_historical_spend FROM `apex-activewear.silver_layer.user_churn_data` WHERE total_order_count >= 5 ORDER BY return_rate_pct DESC, total_historical_spend DESC LIMIT 10;",
+      "generated_sql": "SELECT\n  user_id,\n  total_order_count,\n  total_returns,\n  return_rate_pct,\n  total_historical_spend,\n  historical_aov,\n  recency_days\nFROM `apex-activewear.silver_layer.user_churn_data_current`\nWHERE total_order_count > 1\n  AND (return_rate_pct >= 100 OR total_returns >= total_order_count)\nORDER BY\n  total_order_count DESC,\n  total_returns DESC;",
+      "latency_seconds": 23.11,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": false,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query reads a different table (user_churn_data_current instead of user_churn_data), lowers the order threshold from >=5 to >1, and adds a 100% return-rate filter that the ground truth does not apply. It also orders by order count rather than return rate and spend, and drops the LIMIT 1",
+      "failure_type": "wrong_table",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_ambiguous_03",
+      "question": "Which product lines are causing major financial drag due to high return costs?",
+      "expected_tables": [
+        "mart_product_leakage"
+      ],
+      "golden_sql": "SELECT category, gross_revenue, return_loss, total_loss_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY return_loss DESC;",
+      "generated_sql": "SELECT\n  category,\n  gross_revenue,\n  net_revenue,\n  return_loss,\n  return_rate_pct,\n  total_loss_pct\nFROM `apex-activewear.gold_layer.mart_product_leakage`\nORDER BY return_loss DESC;",
+      "latency_seconds": 10.09,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same mart_product_leakage table, returns the same category, gross_revenue, return_loss and total_loss_pct columns, and orders by return_loss DESC. The extra net_revenue and return_rate_pct columns are helpful additions that do not change the grain or filters.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_04",
+      "question": "Show customer segment breakdown with user counts, average first basket size, and average 12-month LTV from the 12m segmentation mart.",
+      "expected_tables": [
+        "mart_ltv_12m_segmentation"
+      ],
+      "golden_sql": "SELECT customer_segment, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(first_basket_size), 2) AS avg_first_basket, ROUND(AVG(ltv_12_months), 2) AS avg_12m_ltv FROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation` GROUP BY customer_segment ORDER BY avg_12m_ltv DESC;",
+      "generated_sql": "SELECT\n  customer_segment,\n  COUNT(DISTINCT user_id) AS user_count,\n  ROUND(AVG(first_basket_size), 2) AS avg_first_basket_size,\n  ROUND(AVG(ltv_12_months), 2) AS avg_12m_ltv\nFROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation`\nGROUP BY customer_segment\nORDER BY avg_12m_ltv DESC;",
+      "latency_seconds": 10.66,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same mart table, groups by customer_segment, and computes the same distinct user count, average first basket size and average 12-month LTV with identical rounding and ordering; only the aliases differ.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_05",
+      "question": "What is the customer count, average monetary value, and average recency days across RFM segments?",
+      "expected_tables": [
+        "mart_rfm_segments"
+      ],
+      "golden_sql": "SELECT rfm_segment, COUNT(DISTINCT user_id) AS user_count, ROUND(AVG(monetary_value), 2) AS avg_monetary_value, ROUND(AVG(recency_days), 1) AS avg_recency FROM `apex-activewear.gold_layer.mart_rfm_segments` GROUP BY rfm_segment ORDER BY user_count DESC;",
+      "generated_sql": "SELECT\n  rfm_segment,\n  COUNT(*) AS customer_count,\n  ROUND(AVG(monetary_value), 2) AS avg_monetary_value,\n  ROUND(AVG(recency_days), 2) AS avg_recency_days\nFROM `apex-activewear.gold_layer.mart_rfm_segments`\nGROUP BY rfm_segment\nORDER BY customer_count DESC;",
+      "latency_seconds": 10.18,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same RFM mart table, grouped by rfm_segment, with the same metrics. COUNT(*) equals COUNT(DISTINCT user_id) when the mart has one row per user, which is the expected grain. The rounding difference is cosmetic.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_06",
+      "question": "What is the retention rate percentage for month 3 across customer segments in segmented retention mart?",
+      "expected_tables": [
+        "mart_segmented_retention"
+      ],
+      "golden_sql": "SELECT segment, month_number, initial_users, active_users, retention_rate_pct FROM `apex-activewear.gold_layer.mart_segmented_retention` WHERE month_number = 3 ORDER BY retention_rate_pct DESC;",
+      "generated_sql": "SELECT\n  segment,\n  retention_rate_pct\nFROM `apex-activewear.gold_layer.mart_segmented_retention`\nWHERE month_number = 3\nORDER BY retention_rate_pct DESC;",
+      "latency_seconds": 10.56,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same mart table, filters to month_number = 3, and returns segment and retention_rate_pct, which are the dimensions and metric the question asks for; the omitted initial_users and active_users columns are extras the question does not require.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_07",
+      "question": "What share of total realized revenue in 2024 came from each traffic source, based on order attribution?",
+      "expected_tables": [
+        "stg_order_items",
+        "int_order_attribution"
+      ],
+      "golden_sql": "SELECT a.traffic_source, ROUND(SUM(oi.sale_price), 2) AS realized_revenue, ROUND(100 * SUM(oi.sale_price) / SUM(SUM(oi.sale_price)) OVER (), 2) AS revenue_share_pct FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.int_order_attribution` a ON oi.order_id = a.order_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2024 GROUP BY a.traffic_source ORDER BY realized_revenue DESC;",
+      "generated_sql": "WITH source_revenue AS (\n  SELECT\n    oa.traffic_source,\n    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_realized_revenue\n  FROM `apex-activewear.silver_layer.stg_order_items` oi\n  JOIN `apex-activewear.silver_layer.int_order_attribution` oa\n    ON oi.order_id = oa.order_id\n  WHERE EXTRACT(YEAR FROM oi.created_at) = 2024\n    AND oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY oa.traffic_source\n)\nSELECT\n  traffic_source,\n  total_realized_revenue,\n  ROUND(100 * SAFE_DIVIDE(total_realized_revenue, SUM(total_realized_revenue) OVER ()), 2) AS revenue_share_pct\nFROM source_revenue\nORDER BY total_realized_revenue DESC;",
+      "latency_seconds": 17.42,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same tables, join, 2024 filter and grain as the ground truth; the status NOT IN ('Returned','Cancelled') filter matches the realized-revenue rule, and the share-of-total window calculation is equivalent.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_08",
+      "question": "Compare total user count, average historical spend, and average return rate between churned and non-churned users.",
+      "expected_tables": [
+        "user_churn_data"
+      ],
+      "golden_sql": "SELECT has_churned, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(total_historical_spend), 2) AS avg_historical_spend, ROUND(AVG(return_rate_pct), 2) AS avg_return_rate FROM `apex-activewear.silver_layer.user_churn_data` GROUP BY has_churned;",
+      "generated_sql": "SELECT\n  has_churned,\n  COUNT(user_id) AS total_users,\n  ROUND(AVG(total_historical_spend), 2) AS avg_historical_spend,\n  ROUND(AVG(return_rate_pct), 2) AS avg_return_rate_pct\nFROM `apex-activewear.silver_layer.user_churn_data`\nGROUP BY has_churned\nORDER BY has_churned;",
+      "latency_seconds": 12.56,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same table, grouping, and metrics as the ground truth; COUNT vs COUNT DISTINCT on user_id is equivalent for a per-user churn table, and the ordering and alias differences are cosmetic.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_09",
+      "question": "Calculate month-over-month revenue growth rate by product category for 2023 using window functions.",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_products"
+      ],
+      "golden_sql": "WITH monthly_metrics AS (SELECT p.category, EXTRACT(MONTH FROM oi.created_at) AS order_month, SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE EXTRACT(YEAR FROM oi.created_at) = 2023 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY p.category, order_month), mom AS (SELECT category, order_month, total_revenue, LAG(total_revenue) OVER (PARTITION BY category ORDER BY order_month) AS prev_revenue FROM monthly_metrics) SELECT category, order_month, total_revenue, ROUND(SAFE_DIVIDE(total_revenue - prev_revenue, prev_revenue) * 100, 2) AS mom_growth_pct FROM mom ORDER BY category, order_month;",
+      "generated_sql": "WITH monthly_metrics AS (\n  SELECT\n    p.category AS product_category,\n    EXTRACT(MONTH FROM oi.created_at) AS order_month,\n    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue\n  FROM `apex-activewear.silver_layer.stg_order_items` oi\n  JOIN `apex-activewear.silver_layer.stg_products` p\n    ON oi.product_id = p.product_id\n  WHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n    AND oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY p.category, order_month\n),\nmom_calculations AS (\n  SELECT\n    product_category,\n    order_month,\n    total_revenue,\n    LAG(total_revenue) OVER (PARTITION BY product_category ORDER BY order_month) AS prev_month_revenue\n  FROM monthly_metrics\n)\nSELECT\n  product_category,\n  order_month,\n  total_revenue,\n  ROUND(SAFE_DIVIDE(total_revenue - prev_month_revenue, prev_month_revenue) * 100, 2) AS mom_revenue_growth_pct\nFROM mom_calculations\nORDER BY product_category, order_month;",
+      "latency_seconds": 15.38,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query uses the same tables, join, 2023 filter, Returned/Cancelled exclusion, monthly category grain, LAG window and growth percentage calculation as the ground truth, differing only in aliases.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_10",
+      "question": "What is the total realized revenue, order count, and average gross margin by user country for 2024?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT u.country, COUNT(DISTINCT oi.order_id) AS total_orders, SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue, ROUND(AVG(oi.gross_margin_amount), 2) AS avg_gross_margin FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE EXTRACT(YEAR FROM oi.created_at) = 2024 AND oi.status NOT IN ('Returned', 'Cancelled') GROUP BY u.country ORDER BY total_revenue DESC;",
+      "generated_sql": "SELECT\n  u.country,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_realized_revenue,\n  COUNT(DISTINCT oi.order_id) AS order_count,\n  ROUND(AVG(SAFE_DIVIDE(oi.sale_price - oi.cost, oi.sale_price)) * 100, 2) AS avg_gross_margin_pct\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_users` u\n  ON oi.user_id = u.user_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2024\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY u.country\nORDER BY total_realized_revenue DESC;",
+      "latency_seconds": 21.34,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "Table, joins, 2024 filter and status exclusions match the ground truth, but the generated query returns average gross margin as a per-item percentage ((sale_price - cost)/sale_price * 100). The ground truth averages gross_margin_amount in currency, so the metric and its units differ.",
+      "failure_type": "wrong_metric",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_11",
+      "question": "List distribution center names and their total order volumes from staging orders.",
+      "expected_tables": [
+        "stg_orders",
+        "stg_distribution_centers"
+      ],
+      "golden_sql": "SELECT dc.name AS dc_name, COUNT(o.order_id) AS total_orders FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_distribution_centers` dc ON o.distribution_center_id = dc.id GROUP BY dc.name ORDER BY total_orders DESC;",
+      "generated_sql": "SELECT\n  dc.name AS distribution_center_name,\n  COUNT(DISTINCT o.order_id) AS total_order_volume\nFROM `apex-activewear.silver_layer.stg_distribution_centers` AS dc\nJOIN `apex-activewear.silver_layer.stg_orders` AS o\n  ON dc.id = o.distribution_center_id\nGROUP BY dc.name\nORDER BY total_order_volume DESC;",
+      "latency_seconds": 11.6,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same tables, same join on distribution_center_id, same grouping by dc.name and ordering; COUNT(DISTINCT order_id) equals COUNT(order_id) when order_id is unique in staging orders, so the results match.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_12",
+      "question": "Show total orders and timeline anomaly order counts grouped by traffic source from int order attribution.",
+      "expected_tables": [
+        "int_order_attribution"
+      ],
+      "golden_sql": "SELECT traffic_source, COUNT(order_id) AS total_orders, SUM(CASE WHEN has_timeline_anomaly THEN 1 ELSE 0 END) AS anomaly_orders FROM `apex-activewear.silver_layer.int_order_attribution` GROUP BY traffic_source ORDER BY total_orders DESC;",
+      "generated_sql": "SELECT\n  traffic_source,\n  COUNT(DISTINCT order_id) AS total_orders,\n  COUNTIF(has_timeline_anomaly) AS timeline_anomaly_orders\nFROM `apex-activewear.silver_layer.int_order_attribution`\nGROUP BY traffic_source\nORDER BY total_orders DESC;",
+      "latency_seconds": 11.6,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Generated query reads the same table, groups by traffic_source, and computes total orders and timeline anomaly counts equivalently; COUNT(DISTINCT order_id) vs COUNT(order_id) is equivalent for an order-grain attribution table, and COUNTIF(has_timeline_anomaly) matches the SUM(CASE...) logic.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_13",
+      "question": "What is the total user count, average lifetime orders, and average lifetime revenue by acquisition source in int user lifecycle?",
+      "expected_tables": [
+        "int_user_lifecycle"
+      ],
+      "golden_sql": "SELECT acquisition_source, COUNT(DISTINCT user_id) AS total_users, ROUND(AVG(lifetime_orders), 1) AS avg_lifetime_orders, ROUND(AVG(lifetime_revenue), 2) AS avg_lifetime_revenue FROM `apex-activewear.silver_layer.int_user_lifecycle` GROUP BY acquisition_source ORDER BY avg_lifetime_revenue DESC;",
+      "generated_sql": "SELECT\n  acquisition_source,\n  COUNT(DISTINCT user_id) AS total_user_count,\n  ROUND(AVG(lifetime_orders), 2) AS avg_lifetime_orders,\n  ROUND(AVG(lifetime_revenue), 2) AS avg_lifetime_revenue\nFROM `apex-activewear.silver_layer.int_user_lifecycle`\nGROUP BY acquisition_source\nORDER BY total_user_count DESC;",
+      "latency_seconds": 9.6,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same table, grouping, and metrics (distinct user count, average lifetime orders, average lifetime revenue); differences are only rounding precision for orders (2 vs 1 decimal) and ordering, which are permitted.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_14",
+      "question": "Top 10 users with highest return rates who have placed at least 5 orders in user churn data.",
+      "expected_tables": [
+        "user_churn_data"
+      ],
+      "golden_sql": "SELECT user_id, total_returns, return_rate_pct, total_historical_spend FROM `apex-activewear.silver_layer.user_churn_data` WHERE total_order_count >= 5 ORDER BY return_rate_pct DESC, total_historical_spend DESC LIMIT 10;",
+      "generated_sql": "SELECT\n  user_id,\n  total_order_count,\n  total_returns,\n  return_rate_pct\nFROM `apex-activewear.silver_layer.user_churn_data`\nWHERE total_order_count >= 5\nORDER BY return_rate_pct DESC\nLIMIT 10;",
+      "latency_seconds": 10.07,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same user_churn_data table, applies total_order_count >= 5, orders by return_rate_pct DESC and limits to 10, so it answers the question. It omits the spend tiebreaker and the spend column, but the question asks for neither.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_15",
+      "question": "Count total online web events by event type and traffic source for 2024.",
+      "expected_tables": [
+        "stg_online_events"
+      ],
+      "golden_sql": "SELECT event_type, traffic_source, COUNT(*) AS event_count FROM `apex-activewear.silver_layer.stg_online_events` WHERE EXTRACT(YEAR FROM created_at) = 2024 GROUP BY event_type, traffic_source ORDER BY event_count DESC;",
+      "generated_sql": "SELECT\n  event_type,\n  traffic_source,\n  COUNT(*) AS total_events\nFROM `apex-activewear.silver_layer.stg_online_events`\nWHERE EXTRACT(YEAR FROM created_at) = 2024\nGROUP BY event_type, traffic_source\nORDER BY total_events DESC;",
+      "latency_seconds": 9.91,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query uses the same table, the same 2024 filter on created_at, the same grouping by event_type and traffic_source, and the same COUNT(*) metric; only the alias differs.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_16",
+      "question": "Show brand level average retail price and unit margin for the 'Tops & Tees' category for brands with at least 3 products.",
+      "expected_tables": [
+        "stg_products"
+      ],
+      "golden_sql": "SELECT brand, COUNT(product_id) AS product_count, ROUND(AVG(retail_price), 2) AS avg_retail_price, ROUND(AVG(retail_price - cost), 2) AS avg_unit_margin FROM `apex-activewear.silver_layer.stg_products` WHERE category = 'Tops & Tees' GROUP BY brand HAVING COUNT(product_id) >= 3 ORDER BY avg_unit_margin DESC;",
+      "generated_sql": "SELECT\n  brand,\n  ROUND(AVG(retail_price), 2) AS avg_retail_price,\n  ROUND(AVG(retail_price - cost), 2) AS avg_unit_margin\nFROM `apex-activewear.silver_layer.stg_products`\nWHERE category = 'Tops & Tees'\n  AND brand IS NOT NULL\nGROUP BY brand\nHAVING COUNT(product_id) >= 3\nORDER BY avg_unit_margin DESC;",
+      "latency_seconds": 18.21,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same source table, category filter, brand-level grain, metrics and HAVING COUNT >= 3 threshold as the ground truth; the only differences are an omitted product_count column and a harmless brand IS NOT NULL filter that drops an unnamed brand group.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_17",
+      "question": "What is the average number of days between account creation and first order, by user country, for users who have placed at least one order?",
+      "expected_tables": [
+        "int_user_lifecycle",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT u.country, COUNT(*) AS ordering_users, ROUND(AVG(DATE_DIFF(DATE(l.first_order_at), DATE(l.account_created_at), DAY)), 1) AS avg_days_to_first_order FROM `apex-activewear.silver_layer.int_user_lifecycle` l JOIN `apex-activewear.silver_layer.stg_users` u ON l.user_id = u.user_id WHERE l.first_order_at IS NOT NULL GROUP BY u.country ORDER BY avg_days_to_first_order;",
+      "generated_sql": "SELECT\n  u.country,\n  ROUND(AVG(DATE_DIFF(DATE(lc.first_order_at), DATE(u.created_at), DAY)), 2) AS avg_days_to_first_order\nFROM `apex-activewear.silver_layer.stg_users` u\nJOIN `apex-activewear.silver_layer.int_user_lifecycle` lc\n  ON u.user_id = lc.user_id\nWHERE lc.first_order_at IS NOT NULL\n  AND lc.lifetime_orders >= 1\nGROUP BY u.country\nORDER BY avg_days_to_first_order ASC;",
+      "latency_seconds": 19.28,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "It uses the same two tables, the same join and the same grouping by country. The same `first_order_at IS NOT NULL` filter and the same days-to-first-order metric also match the ground truth. `u.created_at` almost certainly equals `l.account_created_at`, and `lifetime_orders >= 1` is almost certainly",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_18",
+      "question": "Show cohort retention rates for cohorts starting with over 1000 initial users up to month 6.",
+      "expected_tables": [
+        "mart_cohort_retention"
+      ],
+      "golden_sql": "SELECT cohort_month, month_number, initial_users, active_users, retention_rate FROM `apex-activewear.gold_layer.mart_cohort_retention` WHERE initial_users > 1000 AND month_number <= 6 ORDER BY cohort_month, month_number;",
+      "generated_sql": "SELECT\n  cohort_month,\n  initial_users,\n  month_number,\n  active_users,\n  retention_rate\nFROM `apex-activewear.gold_layer.mart_cohort_retention`\nWHERE initial_users > 1000\n  AND month_number <= 6\nORDER BY cohort_month, month_number;",
+      "latency_seconds": 9.51,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same table, selects the same columns (in a different order), and applies the same filters (initial_users > 1000 and month_number <= 6) with the same ordering.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_19",
+      "question": "What is the breakdown of order counts and share percentage across order statuses in staging orders?",
+      "expected_tables": [
+        "stg_orders"
+      ],
+      "golden_sql": "SELECT status, COUNT(order_id) AS order_count, ROUND(100.0 * COUNT(order_id) / SUM(COUNT(order_id)) OVER(), 2) AS order_share_pct FROM `apex-activewear.silver_layer.stg_orders` GROUP BY status ORDER BY order_count DESC;",
+      "generated_sql": "SELECT\n  status,\n  COUNT(order_id) AS order_count,\n  ROUND(100.0 * COUNT(order_id) / SUM(COUNT(order_id)) OVER(), 2) AS share_pct\nFROM `apex-activewear.silver_layer.stg_orders`\nGROUP BY status\nORDER BY order_count DESC;",
+      "latency_seconds": 9.34,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query is identical to the ground truth apart from the share column alias: same table, grouping by status, COUNT(order_id), and rounded percentage share with the same ordering.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_20",
+      "question": "Select global fulfillment metrics including average latency, warehouse share of total time percentage, and projected OFCT.",
+      "expected_tables": [
+        "mart_global_fulfillment"
+      ],
+      "golden_sql": "SELECT avg_fulfillment_latency_days, avg_ofct_days, warehouse_share_of_total_time_pct, projected_ofct_after_fix FROM `apex-activewear.gold_layer.mart_global_fulfillment`;",
+      "generated_sql": "SELECT\n  avg_fulfillment_latency_days,\n  avg_ofct_days,\n  warehouse_share_of_total_time_pct,\n  projected_ofct_after_fix\nFROM `apex-activewear.gold_layer.mart_global_fulfillment`;",
+      "latency_seconds": 11.59,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated SQL selects the same four columns from the same table `apex-activewear.gold_layer.mart_global_fulfillment` as the ground truth, with no filters or grain changes.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    }
+  ]
+}

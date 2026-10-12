@@ -1,0 +1,48 @@
+{
+  "held_out_LOW": [
+    "eval_02",
+    "eval_ambiguous_01",
+    "eval_ambiguous_02",
+    "eval_ambiguous_03",
+    "eval_06",
+    "eval_08",
+    "eval_11",
+    "eval_12",
+    "eval_14",
+    "eval_15",
+    "eval_18",
+    "eval_19",
+    "eval_20"
+  ],
+  "pattern_seen_MEDIUM": [
+    "eval_01",
+    "eval_03",
+    "eval_04",
+    "eval_05",
+    "eval_09",
+    "eval_13",
+    "eval_16",
+    "eval_17"
+  ],
+  "near_duplicate_HIGH": [
+    "eval_07",
+    "eval_10"
+  ],
+  "eval_vs_eval_duplicate_sql": [
+    [
+      "eval_01",
+      "eval_ambiguous_03",
+      0.91
+    ],
+    [
+      "eval_ambiguous_01",
+      "eval_06",
+      0.93
+    ],
+    [
+      "eval_ambiguous_02",
+      "eval_14",
+      1.0
+    ]
+  ]
+}
