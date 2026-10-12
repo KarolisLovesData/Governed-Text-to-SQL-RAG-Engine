@@ -40,7 +40,7 @@ LOCATION = "US"
 
 INDEX_TABLE = f"`{PROJECT_ID}.{DATASET_ID}.ai_governance_index`"
 EMBEDDING_MODEL = "gemini-embedding-001"
-LLM_MODEL = "gemini-3.7-flash"
+LLM_MODEL = "gemini-3.8-flash"
 
 api_key = os.getenv("GEMINI_API_KEY")
 if not api_key:
