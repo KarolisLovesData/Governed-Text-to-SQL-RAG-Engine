@@ -1,0 +1,104 @@
+[
+  {
+    "id": "eval_b01",
+    "question": "How much revenue did each product department bring in during 2023?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_products"
+    ],
+    "golden_sql": "SELECT p.department, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY p.department ORDER BY realized_revenue DESC;"
+  },
+  {
+    "id": "eval_b02",
+    "question": "How much revenue did each country generate in 2024?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_users"
+    ],
+    "golden_sql": "SELECT u.country, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2024 GROUP BY u.country ORDER BY realized_revenue DESC;"
+  },
+  {
+    "id": "eval_b03",
+    "question": "Which 5 brands earned the most in 2023?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_products"
+    ],
+    "golden_sql": "SELECT p.brand, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY p.brand ORDER BY realized_revenue DESC LIMIT 5;"
+  },
+  {
+    "id": "eval_b04",
+    "question": "What is the average order value for customers from each acquisition source?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_users"
+    ],
+    "golden_sql": "SELECT u.acquisition_source, ROUND(SUM(oi.sale_price) / COUNT(DISTINCT oi.order_id), 2) AS average_order_value FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE GROUP BY u.acquisition_source ORDER BY average_order_value DESC;"
+  },
+  {
+    "id": "eval_b05",
+    "question": "Which traffic source has the highest share of orders with suspicious shipping timelines?",
+    "expected_tables": [
+      "int_order_attribution"
+    ],
+    "golden_sql": "SELECT traffic_source, COUNT(*) AS total_orders, COUNTIF(has_timeline_anomaly) AS anomaly_orders, ROUND(100 * SAFE_DIVIDE(COUNTIF(has_timeline_anomaly), COUNT(*)), 2) AS anomaly_share_pct FROM `apex-activewear.silver_layer.int_order_attribution` GROUP BY traffic_source ORDER BY anomaly_share_pct DESC;"
+  },
+  {
+    "id": "eval_b06",
+    "question": "How many users show website activity from before they registered?",
+    "expected_tables": [
+      "stg_users",
+      "stg_online_events"
+    ],
+    "golden_sql": "SELECT COUNT(DISTINCT oe.user_id) AS users_with_pre_registration_events FROM `apex-activewear.silver_layer.stg_users` u JOIN `apex-activewear.silver_layer.stg_online_events` oe ON u.user_id = oe.user_id WHERE oe.created_at < u.created_at;"
+  },
+  {
+    "id": "eval_b07",
+    "question": "Are there any order items with an invalid price?",
+    "expected_tables": [
+      "stg_order_items"
+    ],
+    "golden_sql": "SELECT COUNT(*) AS invalid_price_items FROM `apex-activewear.silver_layer.stg_order_items` WHERE sale_price < 0 OR sale_price IS NULL;"
+  },
+  {
+    "id": "eval_b08",
+    "question": "Is our revenue over-dependent on any single traffic source?",
+    "expected_tables": [
+      "stg_order_items",
+      "int_order_attribution"
+    ],
+    "golden_sql": "WITH source_revenue AS (SELECT a.traffic_source, SUM(oi.sale_price) AS revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.int_order_attribution` a ON oi.order_id = a.order_id WHERE oi.is_realized_revenue = TRUE GROUP BY a.traffic_source), shares AS (SELECT traffic_source, ROUND(100 * revenue / SUM(revenue) OVER (), 2) AS share_pct FROM source_revenue) SELECT traffic_source, share_pct FROM shares WHERE share_pct > 20 ORDER BY share_pct DESC;"
+  },
+  {
+    "id": "eval_b09",
+    "question": "Who are our 10 biggest spenders that are likely to leave?",
+    "expected_tables": [
+      "customer_churn_scores"
+    ],
+    "golden_sql": "SELECT user_id, total_historical_spend, churn_probability FROM `apex-activewear.gold_layer.customer_churn_scores` WHERE is_churn_risk = TRUE ORDER BY total_historical_spend DESC LIMIT 10;"
+  },
+  {
+    "id": "eval_b10",
+    "question": "Which distribution center is the biggest bottleneck in our delivery times?",
+    "expected_tables": [
+      "mart_dc_fulfillment"
+    ],
+    "golden_sql": "SELECT distribution_center, avg_fulfillment_latency_days FROM `apex-activewear.gold_layer.mart_dc_fulfillment` ORDER BY avg_fulfillment_latency_days DESC LIMIT 1;"
+  },
+  {
+    "id": "eval_b11",
+    "question": "What share of our customers falls into each value tier?",
+    "expected_tables": [
+      "mart_ltv_12m_segmentation"
+    ],
+    "golden_sql": "SELECT customer_segment, COUNT(*) AS customers, ROUND(100 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS share_pct FROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation` GROUP BY customer_segment ORDER BY customers DESC;"
+  },
+  {
+    "id": "eval_b12",
+    "question": "What percentage of our customers have bought more than once?",
+    "expected_tables": [
+      "int_user_lifecycle"
+    ],
+    "golden_sql": "SELECT ROUND(100 * SAFE_DIVIDE(COUNTIF(lifetime_orders > 1), COUNT(*)), 2) AS repeat_customer_pct FROM `apex-activewear.silver_layer.int_user_lifecycle`;"
+  }
+]

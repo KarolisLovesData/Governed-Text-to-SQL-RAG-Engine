@@ -1,14 +1,14 @@
 """
-leakage_check.py - eval/index leakage audit for the Governed Text-to-SQL RAG Engine.
+04_leakage_check.py - eval/index leakage audit for the Governed Text-to-SQL RAG Engine.
 
 Question it answers: are any eval questions near-duplicates of (or heavily overlapping with)
 the few-shot examples the engine retrieves at answer time?
 
-Run from the repo root (reads data/*.json|csv, writes leakage_report.csv + eval_split.json):
+Run from src (reads data/, and the run results in results/; writes leakage_report.csv + eval_split.json to results/):
 
-    python src/leakage_check.py                 # semantic check with gemini-embedding-001 (needs GEMINI_API_KEY)
-    python src/leakage_check.py --offline       # TF-IDF only, no API calls
-    python src/leakage_check.py --baseline baseline_eval_results.json   # adds baseline vs champion by stratum
+    python 04_leakage_check.py                  # semantic check with gemini-embedding-001 (needs GEMINI_API_KEY)
+    python 04_leakage_check.py --offline        # TF-IDF only, no API calls
+    # if results/baseline_results_claude_judge.json exists it is picked up automatically (baseline vs champion by stratum)
 
 Tiers (per eval question):
     HIGH    near-duplicate question of a golden few-shot (semantic >= --high, or TF-IDF >= 0.45),
@@ -105,21 +105,36 @@ def make_embedder():
 # --------------------------------------------------------------------- main
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data-dir", default="data")
-    ap.add_argument("--out-dir", default=".")
+    ap.add_argument("--data-dir", default=str(Path(__file__).resolve().parent.parent / "data"))
+    ap.add_argument("--out-dir", default=str(Path(__file__).resolve().parent.parent / "results"))
+    ap.add_argument("--eval-file", default="eval_queries.json", help="question file inside data-dir (e.g. eval_queries_set_b.json)")
     ap.add_argument("--offline", action="store_true", help="skip embeddings; use TF-IDF only")
     ap.add_argument("--high", type=float, default=0.85, help="cosine >= this => HIGH (tune using the printed distribution)")
     ap.add_argument("--review", type=float, default=0.75, help="cosine >= this => MEDIUM")
-    ap.add_argument("--baseline", default=None, help="baseline_eval_results.json from baseline_evals.py")
+    ap.add_argument("--baseline", default=None, help="baseline results JSON (default: results/baseline_results_claude_judge.json if it exists)")
+    ap.add_argument("--results", default=None, help="governed-engine results JSON (default: results/eval_results_claude_judge.json)")
     a = ap.parse_args()
+    if a.baseline is None:
+        cand = Path(a.out_dir) / "baseline_results_claude_judge.json"
+        a.baseline = str(cand) if cand.exists() else None
 
     d = Path(a.data_dir)
-    evals = json.load(open(d / "eval_queries.json", encoding="utf-8"))
+    evals = json.load(open(d / a.eval_file, encoding="utf-8"))
     golden = json.load(open(d / "golden_queries.json", encoding="utf-8"))
-    res_path = d / "eval_results.json"
+    if a.results:
+        res_path = Path(a.results)
+    else:
+        res_path = Path(a.out_dir) / "eval_results_claude_judge.json"
+
+    def load_rows(path):
+        """Accept either a plain list or {"summary":..., "results":[...]}."""
+        data = json.load(open(path, encoding="utf-8"))
+        return data["results"] if isinstance(data, dict) else data
+
     results = {}
     if res_path.exists():
-        results = {r["id"]: r for r in json.load(open(res_path, encoding="utf-8"))["results"]}
+        results = {r["id"]: r for r in load_rows(res_path)}
+        print(f"Using governed-engine results: {res_path}")
     schema_cols = set()
     sp = d / "Apex Table Schemas.csv"
     if sp.exists():
@@ -238,17 +253,19 @@ def main():
         stratum("exact", rows, "schema_pass_exact")
 
     if a.baseline and Path(a.baseline).exists():
-        base = {r["id"]: r for r in json.load(open(a.baseline, encoding="utf-8"))}
+        base = {r["id"]: r for r in load_rows(a.baseline)}
         print("\nBaseline vs champion (semantic pass), paired by question:")
         for label, sel in (("all", rows), ("held-out (LOW)", [r for r in rows if r["tier"] == "LOW"]),
                            ("seen pattern (MEDIUM+HIGH)", [r for r in rows if r["tier"] != "LOW"])):
-            sel = [r for r in sel if r["id"] in base and r["champion_semantic_pass"] is not None]
+            # rows where either judge call errored (None) are excluded from the paired comparison
+            sel = [r for r in sel if r["id"] in base and r["champion_semantic_pass"] is not None
+                   and base[r["id"]].get("semantic_logic_pass") is not None]
             ch = sum(1 for r in sel if r["champion_semantic_pass"])
             bs = sum(1 for r in sel if base[r["id"]]["semantic_logic_pass"])
             b = sum(1 for r in sel if r["champion_semantic_pass"] and not base[r["id"]]["semantic_logic_pass"])
             c = sum(1 for r in sel if not r["champion_semantic_pass"] and base[r["id"]]["semantic_logic_pass"])
             print(f"  {label:32}champion {ch}/{len(sel)}  baseline {bs}/{len(sel)}  champion-only wins={b} baseline-only wins={c}  McNemar p={mcnemar_exact(b, c):.3f}")
-        missed = [r["id"] for r in rows if r["id"] in base and not base[r["id"]]["semantic_logic_pass"]]
+        missed = [r["id"] for r in rows if r["id"] in base and base[r["id"]].get("semantic_logic_pass") is False]
         print("  baseline misses:", missed)
     print(f"\nWrote {out / 'leakage_report.csv'} and {out / 'eval_split.json'}")
 

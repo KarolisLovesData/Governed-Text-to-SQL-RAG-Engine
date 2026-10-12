@@ -1,0 +1,279 @@
+{
+  "summary": {
+    "system": "Governed RAG engine",
+    "run_at_utc": "2026-10-10T23:27:20+00:00",
+    "judge_model": "claude-sonnet-5-5",
+    "judge_prompt_version": "v1",
+    "total_test_cases": 12,
+    "dry_run_syntax_accuracy_pct": 100.0,
+    "schema_precision_pct": 100.0,
+    "semantic_logic_match_pct": 75.0,
+    "semantic_pass": 9,
+    "semantic_evaluated": 12,
+    "semantic_wilson95_pct": [
+      46.8,
+      91.1
+    ],
+    "judge_errors": 0,
+    "failure_types": {
+      "wrong_filter": 2,
+      "wrong_metric": 1
+    },
+    "avg_latency_seconds": 17.23,
+    "judge_usage": {
+      "calls": 5,
+      "cache_hits": 7,
+      "input_tokens": 4608,
+      "output_tokens": 1053
+    },
+    "escalated_questions": 0
+  },
+  "results": [
+    {
+      "id": "eval_b01",
+      "question": "How much revenue did each product department bring in during 2023?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_products"
+      ],
+      "golden_sql": "SELECT p.department, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY p.department ORDER BY realized_revenue DESC;",
+      "generated_sql": "SELECT\n  p.department,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_products` p\n  ON oi.product_id = p.product_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY p.department\nORDER BY total_revenue DESC;",
+      "latency_seconds": 14.21,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query uses the same tables, join, 2023 filter and department grain, and its status NOT IN ('Returned','Cancelled') filter matches the Returned/Cancelled exclusion that is_realized_revenue is understood to encode (inferred, since that flag's definition isn't shown).",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b02",
+      "question": "How much revenue did each country generate in 2024?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT u.country, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2024 GROUP BY u.country ORDER BY realized_revenue DESC;",
+      "generated_sql": "SELECT\n  u.country,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_users` u\n  ON oi.user_id = u.user_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2024\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY u.country\nORDER BY total_revenue DESC;",
+      "latency_seconds": 9.6,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "It uses the same tables, join, year and grain as the ground truth. Excluding Returned and Cancelled items matches the stated realized-revenue rule, although it filters on status instead of the is_realized_revenue flag.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b03",
+      "question": "Which 5 brands earned the most in 2023?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_products"
+      ],
+      "golden_sql": "SELECT p.brand, ROUND(SUM(oi.sale_price), 2) AS realized_revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY p.brand ORDER BY realized_revenue DESC LIMIT 5;",
+      "generated_sql": "SELECT\n  p.brand,\n  SUM(CAST(oi.sale_price AS NUMERIC)) AS total_revenue\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_products` p\n  ON oi.product_id = p.product_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY p.brand\nORDER BY total_revenue DESC\nLIMIT 5;",
+      "latency_seconds": 13.93,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same tables, join, 2023 filter, brand grain, SUM(sale_price) and top 5 ordering; excluding Returned and Cancelled by status matches the realized-revenue rule, and the CAST to NUMERIC is harmless.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b04",
+      "question": "What is the average order value for customers from each acquisition source?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT u.acquisition_source, ROUND(SUM(oi.sale_price) / COUNT(DISTINCT oi.order_id), 2) AS average_order_value FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE GROUP BY u.acquisition_source ORDER BY average_order_value DESC;",
+      "generated_sql": "SELECT\n  u.acquisition_source,\n  ROUND(SAFE_DIVIDE(SUM(CAST(oi.sale_price AS NUMERIC)), COUNT(DISTINCT oi.order_id)), 2) AS average_order_value\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_users` u\n  ON oi.user_id = u.user_id\nWHERE oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY u.acquisition_source\nORDER BY average_order_value DESC;",
+      "latency_seconds": 26.33,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same tables, join, grouping and metric (sum of sale_price over distinct orders per acquisition source); the status NOT IN ('Returned','Cancelled') filter matches the realized-revenue rule, assuming is_realized_revenue is defined that way.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b05",
+      "question": "Which traffic source has the highest share of orders with suspicious shipping timelines?",
+      "expected_tables": [
+        "int_order_attribution"
+      ],
+      "golden_sql": "SELECT traffic_source, COUNT(*) AS total_orders, COUNTIF(has_timeline_anomaly) AS anomaly_orders, ROUND(100 * SAFE_DIVIDE(COUNTIF(has_timeline_anomaly), COUNT(*)), 2) AS anomaly_share_pct FROM `apex-activewear.silver_layer.int_order_attribution` GROUP BY traffic_source ORDER BY anomaly_share_pct DESC;",
+      "generated_sql": "SELECT\n  traffic_source,\n  COUNT(DISTINCT order_id) AS total_orders,\n  COUNT(DISTINCT IF(has_timeline_anomaly, order_id, NULL)) AS anomaly_orders,\n  ROUND(100 * SAFE_DIVIDE(COUNT(DISTINCT IF(has_timeline_anomaly, order_id, NULL)), COUNT(DISTINCT order_id)), 2) AS anomaly_share_pct\nFROM `apex-activewear.silver_layer.int_order_attribution`\nWHERE traffic_source IS NOT NULL\nGROUP BY traffic_source\nORDER BY anomaly_share_pct DESC\nLIMIT 1;",
+      "latency_seconds": 21.58,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same table and anomaly flag; the share per traffic source is computed equivalently (distinct order_id is harmless if the grain is one row per order), and LIMIT 1 returns the highest-share source as asked. The only differences are excluding NULL traffic sources and using DISTINCT, neither of which ma",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b06",
+      "question": "How many users show website activity from before they registered?",
+      "expected_tables": [
+        "stg_users",
+        "stg_online_events"
+      ],
+      "golden_sql": "SELECT COUNT(DISTINCT oe.user_id) AS users_with_pre_registration_events FROM `apex-activewear.silver_layer.stg_users` u JOIN `apex-activewear.silver_layer.stg_online_events` oe ON u.user_id = oe.user_id WHERE oe.created_at < u.created_at;",
+      "generated_sql": "SELECT\n  COUNT(DISTINCT oe.user_id) AS users_with_pre_registration_activity\nFROM `apex-activewear.silver_layer.stg_online_events` AS oe\nJOIN `apex-activewear.silver_layer.stg_users` AS ur\n  ON oe.user_id = ur.user_id\nWHERE oe.created_at < ur.created_at;",
+      "latency_seconds": 9.71,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query uses the same tables, the same join on user_id, and the same filter (event created_at < user created_at) with COUNT(DISTINCT user_id), so it is semantically identical to the ground truth; only the join order and aliases differ.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b07",
+      "question": "Are there any order items with an invalid price?",
+      "expected_tables": [
+        "stg_order_items"
+      ],
+      "golden_sql": "SELECT COUNT(*) AS invalid_price_items FROM `apex-activewear.silver_layer.stg_order_items` WHERE sale_price < 0 OR sale_price IS NULL;",
+      "generated_sql": "SELECT\n  order_item_id,\n  order_id,\n  sale_price\nFROM `apex-activewear.silver_layer.stg_order_items`\nWHERE sale_price < 0\n   OR sale_price IS NULL;",
+      "latency_seconds": 10.95,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query uses the same table and the same invalid-price filter (sale_price < 0 OR NULL) as the ground truth, returning the offending rows instead of a count, which still answers whether any exist.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b08",
+      "question": "Is our revenue over-dependent on any single traffic source?",
+      "expected_tables": [
+        "stg_order_items",
+        "int_order_attribution"
+      ],
+      "golden_sql": "WITH source_revenue AS (SELECT a.traffic_source, SUM(oi.sale_price) AS revenue FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.int_order_attribution` a ON oi.order_id = a.order_id WHERE oi.is_realized_revenue = TRUE GROUP BY a.traffic_source), shares AS (SELECT traffic_source, ROUND(100 * revenue / SUM(revenue) OVER (), 2) AS share_pct FROM source_revenue) SELECT traffic_source, share_pct FROM shares WHERE share_pct > 20 ORDER BY share_pct DESC;",
+      "generated_sql": "WITH source_revenue AS (\n  SELECT\n    map.traffic_source,\n    SUM(oi.sale_price) AS total_revenue\n  FROM `apex-activewear.silver_layer.stg_order_items` AS oi\n  JOIN `apex-activewear.silver_layer.int_order_attribution` AS map\n    ON oi.order_id = map.order_id\n  WHERE oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY 1\n),\nshare_calc AS (\n  SELECT\n    traffic_source,\n    total_revenue,\n    ROUND(100.0 * SAFE_DIVIDE(total_revenue, SUM(total_revenue) OVER()), 2) AS revenue_share_pct\n  FROM source_revenue\n)\nSELECT\n  traffic_source,\n  ROUND(total_revenue, 2) AS total_revenue,\n  revenue_share_pct\nFROM share_calc\nORDER BY revenue_share_pct DESC;",
+      "latency_seconds": 31.74,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The ground truth keeps only traffic sources with a revenue share above 20%, which is the over-dependence threshold, but the generated query returns every source with no threshold, so it never answers whether any source is over-dependent.",
+      "failure_type": "wrong_filter",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b09",
+      "question": "Who are our 10 biggest spenders that are likely to leave?",
+      "expected_tables": [
+        "customer_churn_scores"
+      ],
+      "golden_sql": "SELECT user_id, total_historical_spend, churn_probability FROM `apex-activewear.gold_layer.customer_churn_scores` WHERE is_churn_risk = TRUE ORDER BY total_historical_spend DESC LIMIT 10;",
+      "generated_sql": "SELECT\n  user_id,\n  total_historical_spend,\n  churn_probability,\n  recency_days,\n  total_order_count\nFROM `apex-activewear.gold_layer.customer_churn_scores`\nWHERE is_churn_risk = TRUE\nORDER BY total_historical_spend DESC\nLIMIT 10;",
+      "latency_seconds": 14.24,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same table, applies the same is_churn_risk = TRUE filter, orders by total_historical_spend DESC and limits to 10; the extra columns (recency_days, total_order_count) are harmless.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b10",
+      "question": "Which distribution center is the biggest bottleneck in our delivery times?",
+      "expected_tables": [
+        "mart_dc_fulfillment"
+      ],
+      "golden_sql": "SELECT distribution_center, avg_fulfillment_latency_days FROM `apex-activewear.gold_layer.mart_dc_fulfillment` ORDER BY avg_fulfillment_latency_days DESC LIMIT 1;",
+      "generated_sql": "SELECT\n  distribution_center,\n  avg_ofct_days,\n  avg_fulfillment_latency_days,\n  volume_share_pct\nFROM `apex-activewear.gold_layer.mart_dc_fulfillment`\nORDER BY avg_ofct_days DESC\nLIMIT 1;",
+      "latency_seconds": 17.38,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query ranks distribution centers by avg_ofct_days instead of avg_fulfillment_latency_days, so it can return a different DC than the ground truth for the bottleneck question.",
+      "failure_type": "wrong_metric",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b11",
+      "question": "What share of our customers falls into each value tier?",
+      "expected_tables": [
+        "mart_ltv_12m_segmentation"
+      ],
+      "golden_sql": "SELECT customer_segment, COUNT(*) AS customers, ROUND(100 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS share_pct FROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation` GROUP BY customer_segment ORDER BY customers DESC;",
+      "generated_sql": "SELECT\n  customer_segment,\n  COUNT(*) AS customer_count,\n  ROUND(100 * SAFE_DIVIDE(COUNT(*), SUM(COUNT(*)) OVER ()), 2) AS customer_share_pct\nFROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation`\nGROUP BY customer_segment\nORDER BY customer_count DESC;",
+      "latency_seconds": 18.61,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query reads the same table, groups by customer_segment, and computes the same count and percentage share with the same rounding and ordering; SAFE_DIVIDE only guards against division by zero.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b12",
+      "question": "What percentage of our customers have bought more than once?",
+      "expected_tables": [
+        "int_user_lifecycle"
+      ],
+      "golden_sql": "SELECT ROUND(100 * SAFE_DIVIDE(COUNTIF(lifetime_orders > 1), COUNT(*)), 2) AS repeat_customer_pct FROM `apex-activewear.silver_layer.int_user_lifecycle`;",
+      "generated_sql": "SELECT\n  COUNT(DISTINCT user_id) AS total_customers,\n  COUNT(DISTINCT IF(lifetime_orders > 1, user_id, NULL)) AS repeat_customers,\n  ROUND(100 * SAFE_DIVIDE(COUNT(DISTINCT IF(lifetime_orders > 1, user_id, NULL)), COUNT(DISTINCT user_id)), 2) AS repeat_customer_pct\nFROM `apex-activewear.silver_layer.int_user_lifecycle`\nWHERE lifetime_orders > 0;",
+      "latency_seconds": 18.54,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The generated query adds WHERE lifetime_orders > 0, which shrinks the denominator to buyers only, while the ground truth uses all users in the lifecycle table, so the percentage will differ.",
+      "failure_type": "wrong_filter",
+      "judge_model": "claude-sonnet-5-5"
+    }
+  ]
+}
