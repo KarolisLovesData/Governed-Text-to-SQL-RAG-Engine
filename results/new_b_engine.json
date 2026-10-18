@@ -1,0 +1,140 @@
+{
+  "summary": {
+    "system": "Governed RAG engine",
+    "run_at_utc": "2026-10-18T19:27:15+00:00",
+    "code_commit": "d82b75a-dirty",
+    "judge_model": "claude-sonnet-5-5",
+    "judge_prompt_version": "v1",
+    "total_test_cases": 5,
+    "dry_run_syntax_accuracy_pct": 100.0,
+    "schema_precision_pct": 80.0,
+    "semantic_logic_match_pct": 60.0,
+    "semantic_pass": 3,
+    "semantic_evaluated": 5,
+    "semantic_wilson95_pct": [
+      23.1,
+      88.2
+    ],
+    "judge_errors": 0,
+    "failure_types": {
+      "wrong_filter": 1,
+      "missing_business_rule": 1
+    },
+    "avg_latency_seconds": 21.35,
+    "judge_usage": {
+      "calls": 5,
+      "cache_hits": 0,
+      "input_tokens": 4871,
+      "output_tokens": 1647
+    },
+    "escalated_questions": 0
+  },
+  "results": [
+    {
+      "id": "eval_b13",
+      "question": "How many completed orders did each distribution center handle in 2024?",
+      "expected_tables": [
+        "stg_orders",
+        "stg_distribution_centers"
+      ],
+      "golden_sql": "SELECT d.name AS distribution_center, COUNT(*) AS realized_orders FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_distribution_centers` d ON o.distribution_center_id = d.id WHERE o.is_realized_order = TRUE AND EXTRACT(YEAR FROM o.created_at) = 2024 GROUP BY d.name ORDER BY realized_orders DESC;",
+      "generated_sql": "SELECT\n  dc.name AS distribution_center,\n  COUNT(DISTINCT o.order_id) AS completed_orders_count\nFROM `apex-activewear.silver_layer.stg_orders` o\nJOIN `apex-activewear.silver_layer.stg_distribution_centers` dc\n  ON o.distribution_center_id = dc.id\nWHERE o.status = 'Complete'\n  AND EXTRACT(YEAR FROM o.created_at) = 2024\nGROUP BY dc.name\nORDER BY completed_orders_count DESC;",
+      "latency_seconds": 22.55,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The ground truth filters on the business flag is_realized_order = TRUE, which likely covers more than status 'Complete' (probably everything except Cancelled and Returned). The generated query filters on status = 'Complete' only, so its counts would likely be lower than the expected ones.",
+      "failure_type": "wrong_filter",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b14",
+      "question": "Which product category made the most profit in 2024?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_products"
+      ],
+      "golden_sql": "SELECT p.category, ROUND(SUM(oi.gross_margin_amount), 2) AS gross_margin FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2024 GROUP BY p.category ORDER BY gross_margin DESC LIMIT 1;",
+      "generated_sql": "SELECT\n  p.category AS product_category,\n  SUM(CAST(oi.sale_price AS NUMERIC) - CAST(p.cost AS NUMERIC)) AS total_profit\nFROM `apex-activewear.silver_layer.stg_order_items` oi\nJOIN `apex-activewear.silver_layer.stg_products` p\n  ON oi.product_id = p.product_id\nWHERE EXTRACT(YEAR FROM oi.created_at) = 2024\n  AND oi.status NOT IN ('Returned', 'Cancelled')\nGROUP BY p.category\nORDER BY total_profit DESC\nLIMIT 1;",
+      "latency_seconds": 22.46,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Same tables, year filter and grain. Excluding Returned and Cancelled items matches the realized-revenue rule, and sale_price minus product cost is equivalent to gross margin, so the top category by profit should be the same.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b15",
+      "question": "Which distribution centers have the most orders with impossible shipping dates?",
+      "expected_tables": [
+        "int_order_attribution",
+        "stg_orders",
+        "stg_distribution_centers"
+      ],
+      "golden_sql": "SELECT d.name AS distribution_center, COUNTIF(a.has_timeline_anomaly) AS anomaly_orders FROM `apex-activewear.silver_layer.int_order_attribution` a JOIN `apex-activewear.silver_layer.stg_orders` o ON a.order_id = o.order_id JOIN `apex-activewear.silver_layer.stg_distribution_centers` d ON o.distribution_center_id = d.id GROUP BY d.name ORDER BY anomaly_orders DESC;",
+      "generated_sql": "SELECT\n  dc.id AS distribution_center_id,\n  dc.name AS distribution_center_name,\n  COUNT(o.order_id) AS impossible_shipping_order_count\nFROM `apex-activewear.silver_layer.stg_orders` AS o\nJOIN `apex-activewear.silver_layer.stg_distribution_centers` AS dc\n  ON o.distribution_center_id = dc.id\nWHERE o.shipped_at IS NOT NULL\n  AND o.shipped_at < o.created_at\nGROUP BY\n  dc.id,\n  dc.name\nORDER BY\n  impossible_shipping_order_count DESC;",
+      "latency_seconds": 27.28,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": false,
+      "semantic_logic_pass": false,
+      "judge_verdict": "FAIL",
+      "judge_reason": "The ground truth counts orders flagged by `has_timeline_anomaly` in `int_order_attribution`, which likely covers more than shipped-before-created (e.g. delivered before shipped). The generated query hand-rolls only `shipped_at < created_at` on `stg_orders`, so its counts and ranking can differ.",
+      "failure_type": "missing_business_rule",
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b16",
+      "question": "How much did each paying customer spend on average in 2023, by acquisition source?",
+      "expected_tables": [
+        "stg_order_items",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT u.acquisition_source, ROUND(SAFE_DIVIDE(SUM(oi.sale_price), COUNT(DISTINCT oi.user_id)), 2) AS revenue_per_customer FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY u.acquisition_source ORDER BY revenue_per_customer DESC;",
+      "generated_sql": "WITH user_spend_2023 AS (\n  SELECT\n    oi.user_id,\n    u.acquisition_source,\n    SUM(CAST(oi.sale_price AS NUMERIC)) AS total_spend\n  FROM `apex-activewear.silver_layer.stg_order_items` oi\n  JOIN `apex-activewear.silver_layer.stg_users` u\n    ON oi.user_id = u.user_id\n  WHERE EXTRACT(YEAR FROM oi.created_at) = 2023\n    AND oi.status NOT IN ('Returned', 'Cancelled')\n  GROUP BY oi.user_id, u.acquisition_source\n)\nSELECT\n  acquisition_source,\n  COUNT(user_id) AS paying_customer_count,\n  ROUND(AVG(total_spend), 2) AS avg_spend_per_paying_customer\nFROM user_spend_2023\nGROUP BY acquisition_source\nORDER BY avg_spend_per_paying_customer DESC;",
+      "latency_seconds": 22.54,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "Averaging per-user spend equals total revenue divided by distinct paying users, and the generated query uses the same tables, 2023 filter and grouping. Excluding Returned and Cancelled items is the standard realized-revenue rule, so it should match is_realized_revenue = TRUE. The residual risk is th",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "eval_b17",
+      "question": "How many website events did each traffic source generate in 2024, counting only activity after the user signed up?",
+      "expected_tables": [
+        "stg_online_events",
+        "stg_users"
+      ],
+      "golden_sql": "SELECT oe.traffic_source, COUNT(*) AS events FROM `apex-activewear.silver_layer.stg_online_events` oe JOIN `apex-activewear.silver_layer.stg_users` u ON oe.user_id = u.user_id WHERE oe.created_at >= u.created_at AND EXTRACT(YEAR FROM oe.created_at) = 2024 GROUP BY oe.traffic_source ORDER BY events DESC;",
+      "generated_sql": "SELECT\n  oe.traffic_source,\n  COUNT(*) AS total_events\nFROM `apex-activewear.silver_layer.stg_online_events` oe\nJOIN `apex-activewear.silver_layer.stg_users` u\n  ON oe.user_id = u.user_id\nWHERE EXTRACT(YEAR FROM oe.created_at) = 2024\n  AND oe.created_at >= u.created_at\nGROUP BY oe.traffic_source\nORDER BY total_events DESC;",
+      "latency_seconds": 11.91,
+      "dry_run_pass": true,
+      "dry_run_error": null,
+      "escalated": false,
+      "escalation_details": [],
+      "schema_precision_pass": true,
+      "semantic_logic_pass": true,
+      "judge_verdict": "PASS",
+      "judge_reason": "The generated query is logically identical to the ground truth: same tables, join on user_id, 2024 filter, post-signup filter (oe.created_at >= u.created_at), grouping by traffic_source, and ordering; only the column alias and predicate order differ.",
+      "failure_type": null,
+      "judge_model": "claude-sonnet-5-5"
+    }
+  ]
+}
