@@ -12,7 +12,7 @@ Ask a business question in plain English and get BigQuery SQL that follows the c
 
 <img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
 
-**Result:** the engine wrote correct SQL for **89%** of 35 business questions, against **80%** for the same LLM given only the table schemas. The gap comes from business rules that column names don't reveal, such as excluding returned and cancelled orders from revenue. [Details below](#-evaluation).
+**Result:** the engine wrote correct SQL for **88%** of 50 business questions, against **80%** for the same LLM given only the table schemas. The gap comes from business rules that column names don't reveal, such as excluding returned and cancelled orders from revenue. [Details below](#-evaluation).
 
 ## ⚠️ Business Problem
 
@@ -45,22 +45,22 @@ A **Dataform Medallion** pipeline: 6 raw sources, silver staging views with qual
 
 | Questions | Engine | Schema-only baseline |
 |---|---|---|
-| Set A: standard (23) | 22 | 21 |
-| Set B: hidden business rules (12) | 9 | 7 |
-| **All (35)** | **31 (89%, 95% CI 74–95%)** | **28 (80%, 95% CI 64–90%)** |
-| Judge only, before human review | 29 | 27 |
+| Set A: standard and search (33) | 32 | 30 |
+| Set B: hidden business rules (17) | 12 | 10 |
+| **All (50)** | **44 (88%, 95% CI 76–94%)** | **40 (80%, 95% CI 67–89%)** |
+| Judge only, before human review | 42 | 39 |
 
 **How it was scored:** each query must pass a BigQuery dry-run, use the expected tables (exact name match), and match the logic of a reference query. A **Claude** model judges logic with one rubric for both systems, so the grader is from a different model family than the generator.
 
 **What it shows:**
 * **On standard questions the plain LLM nearly ties the engine.** 13 tables fit in one prompt, and many questions name their table.
-* **The engine wins where the rule is hidden.** Every question that only the engine got right (3 of 3) needed a rule the baseline missed, such as realized revenue or valid price. The baseline won none.
-* **Not statistically proven.** 3 wins to 0 gives p ≈ 0.25, and the intervals overlap. 35 questions are too few to prove the gap.
-* **Stable across runs:** the engine scored 29, 28 and 28 over three runs, the baseline 27 each time (judge verdicts before review).
+* **The engine wins where the rule is hidden.** Of the 4 questions only the engine got right, 3 needed a rule the baseline missed, such as realized revenue or valid price. In the fourth the baseline picked a pre-aggregated mart instead of the staging tables. The baseline won none.
+* **Not statistically proven.** 4 wins to 0 gives p ≈ 0.12, and the intervals overlap. 50 questions are too few to prove the gap.
+* **Stable across runs:** on the first 35 questions the engine scored 29, 28 and 28 over three runs, the baseline 27 each time (judge verdicts before review). The last 15 questions were run once.
 
 **How the results were checked:**
 * **Second judge:** Claude Opus re-graded 28 verdicts and agreed with all of them. Same vendor, so this checks consistency, not truth.
-* **Human review:** I reviewed 10 verdicts and overturned 3 (a valid alternative margin definition; an ambiguous question with several defensible answers). Both versions are in the table.
+* **Human review:** I reviewed 10 verdicts on the first 35 questions and overturned 3 (a valid alternative margin definition; an ambiguous question with several defensible answers). The last 15 questions are judge-only. Both versions are in the table.
 * **Leakage check:** benchmark questions were compared with the engine's example queries; near-duplicates were rewritten.
 * **Schema drift check:** the baseline's schema file was synced with the live warehouse, so both systems see the same tables.
 
