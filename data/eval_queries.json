@@ -187,5 +187,88 @@
       "mart_global_fulfillment"
     ],
     "golden_sql": "SELECT avg_fulfillment_latency_days, avg_ofct_days, warehouse_share_of_total_time_pct, projected_ofct_after_fix FROM `apex-activewear.gold_layer.mart_global_fulfillment`;"
+  },
+  {
+    "id": "eval_21",
+    "question": "What percentage of order items were returned in each product department?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_products"
+    ],
+    "golden_sql": "SELECT p.department, ROUND(100 * SAFE_DIVIDE(COUNTIF(oi.is_returned), COUNT(*)), 2) AS return_rate_pct FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id GROUP BY p.department ORDER BY return_rate_pct DESC;"
+  },
+  {
+    "id": "eval_22",
+    "question": "How many customers who are likely to leave haven't ordered anything in over 90 days?",
+    "expected_tables": [
+      "customer_churn_scores"
+    ],
+    "golden_sql": "SELECT COUNT(*) AS at_risk_inactive_customers FROM `apex-activewear.gold_layer.customer_churn_scores` WHERE is_churn_risk = TRUE AND recency_days > 90;"
+  },
+  {
+    "id": "eval_23",
+    "question": "How many customers fall into each recency-frequency-spend group, and how often do they order on average?",
+    "expected_tables": [
+      "mart_rfm_segments"
+    ],
+    "golden_sql": "SELECT rfm_segment, COUNT(*) AS customers, ROUND(AVG(frequency), 2) AS avg_frequency FROM `apex-activewear.gold_layer.mart_rfm_segments` GROUP BY rfm_segment ORDER BY customers DESC;"
+  },
+  {
+    "id": "eval_24",
+    "question": "What was the average number of days from order to delivery for each distribution center in 2024?",
+    "expected_tables": [
+      "stg_orders",
+      "stg_distribution_centers"
+    ],
+    "golden_sql": "SELECT d.name AS distribution_center, ROUND(AVG(TIMESTAMP_DIFF(o.delivered_at, o.created_at, HOUR)) / 24, 2) AS avg_days_to_delivery FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_distribution_centers` d ON o.distribution_center_id = d.id WHERE o.delivered_at IS NOT NULL AND EXTRACT(YEAR FROM o.created_at) = 2024 GROUP BY d.name ORDER BY avg_days_to_delivery DESC;"
+  },
+  {
+    "id": "eval_25",
+    "question": "What share of orders were cancelled in each country in 2024?",
+    "expected_tables": [
+      "stg_orders",
+      "stg_users"
+    ],
+    "golden_sql": "SELECT u.country, ROUND(100 * SAFE_DIVIDE(COUNTIF(o.status = 'Cancelled'), COUNT(*)), 2) AS cancel_rate_pct FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_users` u ON o.user_id = u.user_id WHERE EXTRACT(YEAR FROM o.created_at) = 2024 GROUP BY u.country ORDER BY cancel_rate_pct DESC;"
+  },
+  {
+    "id": "eval_26",
+    "question": "Which signup cohort kept the highest share of users in its first month after signup?",
+    "expected_tables": [
+      "mart_cohort_retention"
+    ],
+    "golden_sql": "SELECT cohort_month, retention_rate FROM `apex-activewear.gold_layer.mart_cohort_retention` WHERE month_number = 1 ORDER BY retention_rate DESC LIMIT 1;"
+  },
+  {
+    "id": "eval_27",
+    "question": "What is the average 12-month LTV for customers whose first basket was over 100, compared with everyone else?",
+    "expected_tables": [
+      "mart_ltv_12m_segmentation"
+    ],
+    "golden_sql": "SELECT first_basket_size > 100 AS first_basket_over_100, COUNT(*) AS customers, ROUND(AVG(ltv_12_months), 2) AS avg_ltv_12m FROM `apex-activewear.gold_layer.mart_ltv_12m_segmentation` GROUP BY first_basket_over_100;"
+  },
+  {
+    "id": "eval_28",
+    "question": "How many current customers send back more than half of what they order?",
+    "expected_tables": [
+      "user_churn_data_current"
+    ],
+    "golden_sql": "SELECT COUNT(*) AS heavy_returners FROM `apex-activewear.silver_layer.user_churn_data_current` WHERE return_rate_pct > 50;"
+  },
+  {
+    "id": "eval_29",
+    "question": "Which product categories lose the most money to cancelled orders?",
+    "expected_tables": [
+      "mart_product_leakage"
+    ],
+    "golden_sql": "SELECT category, cancel_loss, cancel_rate_pct FROM `apex-activewear.gold_layer.mart_product_leakage` ORDER BY cancel_loss DESC;"
+  },
+  {
+    "id": "eval_30",
+    "question": "How many registered users do we have in each country?",
+    "expected_tables": [
+      "stg_users"
+    ],
+    "golden_sql": "SELECT country, COUNT(*) AS users FROM `apex-activewear.silver_layer.stg_users` GROUP BY country ORDER BY users DESC;"
   }
 ]

@@ -100,5 +100,51 @@
       "int_user_lifecycle"
     ],
     "golden_sql": "SELECT ROUND(100 * SAFE_DIVIDE(COUNTIF(lifetime_orders > 1), COUNT(*)), 2) AS repeat_customer_pct FROM `apex-activewear.silver_layer.int_user_lifecycle`;"
+  },
+  {
+    "id": "eval_b13",
+    "question": "How many completed orders did each distribution center handle in 2024?",
+    "expected_tables": [
+      "stg_orders",
+      "stg_distribution_centers"
+    ],
+    "golden_sql": "SELECT d.name AS distribution_center, COUNT(*) AS realized_orders FROM `apex-activewear.silver_layer.stg_orders` o JOIN `apex-activewear.silver_layer.stg_distribution_centers` d ON o.distribution_center_id = d.id WHERE o.is_realized_order = TRUE AND EXTRACT(YEAR FROM o.created_at) = 2024 GROUP BY d.name ORDER BY realized_orders DESC;"
+  },
+  {
+    "id": "eval_b14",
+    "question": "Which product category made the most profit in 2024?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_products"
+    ],
+    "golden_sql": "SELECT p.category, ROUND(SUM(oi.gross_margin_amount), 2) AS gross_margin FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_products` p ON oi.product_id = p.product_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2024 GROUP BY p.category ORDER BY gross_margin DESC LIMIT 1;"
+  },
+  {
+    "id": "eval_b15",
+    "question": "Which distribution centers have the most orders with impossible shipping dates?",
+    "expected_tables": [
+      "int_order_attribution",
+      "stg_orders",
+      "stg_distribution_centers"
+    ],
+    "golden_sql": "SELECT d.name AS distribution_center, COUNTIF(a.has_timeline_anomaly) AS anomaly_orders FROM `apex-activewear.silver_layer.int_order_attribution` a JOIN `apex-activewear.silver_layer.stg_orders` o ON a.order_id = o.order_id JOIN `apex-activewear.silver_layer.stg_distribution_centers` d ON o.distribution_center_id = d.id GROUP BY d.name ORDER BY anomaly_orders DESC;"
+  },
+  {
+    "id": "eval_b16",
+    "question": "How much did each paying customer spend on average in 2023, by acquisition source?",
+    "expected_tables": [
+      "stg_order_items",
+      "stg_users"
+    ],
+    "golden_sql": "SELECT u.acquisition_source, ROUND(SAFE_DIVIDE(SUM(oi.sale_price), COUNT(DISTINCT oi.user_id)), 2) AS revenue_per_customer FROM `apex-activewear.silver_layer.stg_order_items` oi JOIN `apex-activewear.silver_layer.stg_users` u ON oi.user_id = u.user_id WHERE oi.is_realized_revenue = TRUE AND EXTRACT(YEAR FROM oi.created_at) = 2023 GROUP BY u.acquisition_source ORDER BY revenue_per_customer DESC;"
+  },
+  {
+    "id": "eval_b17",
+    "question": "How many website events did each traffic source generate in 2024, counting only activity after the user signed up?",
+    "expected_tables": [
+      "stg_online_events",
+      "stg_users"
+    ],
+    "golden_sql": "SELECT oe.traffic_source, COUNT(*) AS events FROM `apex-activewear.silver_layer.stg_online_events` oe JOIN `apex-activewear.silver_layer.stg_users` u ON oe.user_id = u.user_id WHERE oe.created_at >= u.created_at AND EXTRACT(YEAR FROM oe.created_at) = 2024 GROUP BY oe.traffic_source ORDER BY events DESC;"
   }
 ]

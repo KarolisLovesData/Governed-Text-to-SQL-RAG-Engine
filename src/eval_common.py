@@ -8,6 +8,7 @@ import argparse
 import concurrent.futures
 import json
 import math
+import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,6 +98,16 @@ def wilson(k, n, z=1.96):
     return ((c - h) / d, (c + h) / d)
 
 
+def code_version():
+    """Git commit of the code that produced a run, so results from different code versions are never mixed."""
+    try:
+        git = lambda *a: subprocess.run(["git", *a], cwd=SRC_DIR, capture_output=True, text=True, check=True).stdout.strip()
+        commit = git("rev-parse", "--short", "HEAD")
+        return commit + ("-dirty" if git("status", "--porcelain", "--", str(SRC_DIR), str(DATA_DIR)) else "")
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def summarize(system, results, judge_model, extra=None):
     n = len(results)
     pct = lambda k, d: round(100 * k / d, 1) if d else None
@@ -107,6 +118,7 @@ def summarize(system, results, judge_model, extra=None):
     summary = {
         "system": system,
         "run_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "code_commit": code_version(),
         "judge_model": judge_model,
         "judge_prompt_version": judge.PROMPT_VERSION,
         "total_test_cases": n,
