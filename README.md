@@ -39,7 +39,7 @@ A **Dataform Medallion** pipeline: 6 raw sources, silver staging views with qual
 
 **Question:** does retrieving the company's own rules and tables produce more correct SQL than the same LLM (`gemini-3.8-flash`) given only the table schemas?
 
-<img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
+<img src="visuals/evaluation_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
 
 | 50 business questions | Engine | Schema-only baseline |
 |---|---|---|
