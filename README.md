@@ -10,8 +10,6 @@
 
 Ask a business question in plain English and get BigQuery SQL that follows the company's certified tables and business rules, checked for errors and cost before anyone runs it.
 
-<img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
-
 **Result:** the engine wrote correct SQL for **88%** of 50 business questions, against **80%** for the same LLM given only the table schemas. The gap comes from business rules that column names don't reveal, such as excluding returned and cancelled orders from revenue. [Details below](#-evaluation).
 
 ## ⚠️ Business Problem
@@ -42,6 +40,8 @@ A **Dataform Medallion** pipeline: 6 raw sources, silver staging views with qual
 ## 📊 Evaluation
 
 **Question:** does governed retrieval produce more correct SQL than the same LLM (`gemini-3.8-flash`) given only the schemas?
+
+<img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
 
 | Questions | Engine | Schema-only baseline |
 |---|---|---|
