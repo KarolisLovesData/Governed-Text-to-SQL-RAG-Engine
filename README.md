@@ -10,8 +10,6 @@
 
 Ask a business question in plain English and get BigQuery SQL that follows the company's certified tables and business rules, checked for errors and cost before anyone runs it.
 
-**Result:** the engine wrote correct SQL for **88%** of 50 business questions, against **80%** for the same LLM given only the table schemas. The gap comes from business rules that column names don't reveal, such as excluding returned and cancelled orders from revenue. [Details below](#-evaluation).
-
 ## ⚠️ Business Problem
 
 **APEX Activewear** is a simulated e-commerce warehouse (436K+ transactions, **$48.85M** realized revenue). An LLM pointed at raw schemas writes SQL that runs but can still be wrong:
