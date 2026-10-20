@@ -10,8 +10,6 @@
 
 Ask a business question in plain English and get BigQuery SQL that follows the company's certified tables and business rules, checked for errors and cost before anyone runs it.
 
-<img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
-
 **Result:** the engine wrote correct SQL for **88%** of 50 business questions, against **80%** for the same LLM given only the table schemas. The gap comes from business rules that column names don't reveal, such as excluding returned and cancelled orders from revenue. [Details below](#-evaluation).
 
 ## ⚠️ Business Problem
@@ -41,33 +39,39 @@ A **Dataform Medallion** pipeline: 6 raw sources, silver staging views with qual
 
 ## 📊 Evaluation
 
-**Question:** does governed retrieval produce more correct SQL than the same LLM (`gemini-3.8-flash`) given only the schemas?
+**Question:** does retrieving the company's own rules and tables produce more correct SQL than the same LLM (`gemini-3.8-flash`) given only the table schemas?
 
-| Questions | Engine | Schema-only baseline |
+<img src="visuals/eval_results.png" alt="Engine vs schema-only baseline: share of SQL judged correct" width="800">
+
+| 50 business questions | Engine | Schema-only baseline |
 |---|---|---|
-| Set A: standard and search (33) | 32 | 30 |
-| Set B: hidden business rules (17) | 12 | 10 |
-| **All (50)** | **44 (88%, 95% CI 76–94%)** | **40 (80%, 95% CI 67–89%)** |
-| Judge only, before human review | 42 | 39 |
+| Standard and search questions (33) | 32 | 30 |
+| Questions with a hidden business rule (17) | 12 | 10 |
+| **Correct SQL overall** | **44 (88%)** | **40 (80%)** |
 
-**How it was scored:** each query must pass a BigQuery dry-run, use the expected tables (exact name match), and match the logic of a reference query. A **Claude** model judges logic with one rubric for both systems, so the grader is from a different model family than the generator.
+**How a query is scored:** it must run in BigQuery, use the right tables, and match the logic of a reference query. A **Claude** model grades the logic with the same rules for both systems, so the grader is a different AI from the one writing the SQL.
 
-**What it shows:**
-* **On standard questions the plain LLM nearly ties the engine.** 13 tables fit in one prompt, and many questions name their table.
-* **The engine wins where the rule is hidden.** Of the 4 questions only the engine got right, 3 needed a rule the baseline missed, such as realized revenue or valid price. In the fourth the baseline picked a pre-aggregated mart instead of the staging tables. The baseline won none.
-* **Not statistically proven.** 4 wins to 0 gives p ≈ 0.12, and the intervals overlap. 50 questions are too few to prove the gap.
-* **Stable across runs:** on the first 35 questions the engine scored 29, 28 and 28 over three runs, the baseline 27 each time (judge verdicts before review). The last 15 questions were run once.
+**What it shows**
+* **The engine wins where the rule is hidden.** Of the 4 questions only the engine got right, 3 depended on a rule the schemas don't show, such as "realized revenue" or "valid price". The baseline won none.
+* **On simple questions the two nearly tie.** There are only 13 tables, and many questions name their table.
+* **The gap is real but small.** 50 questions are too few to prove it statistically.
+* **Results are stable.** Three runs of the first 35 questions gave 29, 28 and 28 correct for the engine, and 27 every time for the baseline.
 
-**How the results were checked:**
-* **Second judge:** Claude Opus re-graded 28 verdicts and agreed with all of them. Same vendor, so this checks consistency, not truth.
-* **Human review:** I reviewed 10 verdicts on the first 35 questions and overturned 3 (a valid alternative margin definition; an ambiguous question with several defensible answers). The last 15 questions are judge-only. Both versions are in the table.
-* **Leakage check:** benchmark questions were compared with the engine's example queries; near-duplicates were rewritten.
-* **Schema drift check:** the baseline's schema file was synced with the live warehouse, so both systems see the same tables.
+<details>
+<summary><b>🔎 How I checked the results, and what is still weak (click to expand)</b></summary>
 
-**Limitations:**
-* Small benchmark; three reference queries are disputed (eval_03, eval_10, eval_b10) because the metric has more than one fair definition.
-* Ambiguous jargon has no single right answer.
-* **The escalation rule is weak:** it fired on 2 questions and caught 1 of 6 failures. LLM self-rated confidence is a poor signal; a better trigger is future work.
+**Checks**
+* A second AI judge (Claude Opus) re-graded 28 verdicts and agreed with all of them.
+* I reviewed 10 verdicts myself and overturned 3, where the question had more than one fair answer (for example, two valid ways to define margin). The last 15 questions were graded by the judge only.
+* I compared the test questions with the engine's example queries and rewrote near-duplicates, so the engine can't simply look up the answers.
+* I synced the baseline's schema file with the live warehouse, so both systems see the same tables.
+
+**Weak spots**
+* Small test: 50 questions. Three reference answers are disputed (`eval_03`, `eval_10`, `eval_b10`) because the metric has more than one fair definition.
+* Ambiguous business terms have no single right answer.
+* The "ask a human" rule is weak. It fired on 2 questions and caught 1 of 6 failures, because the AI's own confidence score is a poor signal. A better trigger is future work.
+
+</details>
 
 ### 🏗️ Design Decisions
 * **LLM judge vs. result-set equality:** comparing result sets fails queries that are correct but shaped differently (extra columns, other rounding). An LLM judges logic; table matching stays deterministic.
