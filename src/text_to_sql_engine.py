@@ -54,7 +54,9 @@ ai_client = genai.Client(api_key=api_key)
 STOP_WORDS = {
     "what", "is", "the", "are", "by", "for", "across", "compare", "show",
     "return", "get", "rank", "list", "and", "or", "in", "of", "to", "with",
-    "whole", "dataset", "total", "average", "each", "all"
+    "whole", "dataset", "total", "average", "each", "all",
+    "how", "much", "many", "which", "who", "did", "does", "do", "our", "we", "from", "on", "at", "per",
+    "that", "this", "was", "were", "has", "have", "their", "its", "than", "into", "most", "more", "any"
 }
 
 
@@ -123,20 +125,28 @@ def dense_search(query_vector, top_k: int):
 
 
 def keyword_search(user_query: str, top_k: int):
-    """Lexical search: index chunks containing the question's domain keywords."""
+    """Lexical search: index chunks ranked by how many of the question's domain keywords they contain.
+
+    Matches on plain substrings, so "revenue" also finds `is_realized_revenue` and "order" finds "orders".
+    (BigQuery SEARCH() was dropped here: it needs EVERY keyword in the same chunk, so it matched nothing.)
+    """
     words = re.findall(r'\w+', user_query.lower())
-    domain_keywords = [w for w in words if w not in STOP_WORDS and len(w) > 1]
-    search_query_str = " ".join(domain_keywords) if domain_keywords else user_query
+    domain_keywords = sorted({w for w in words if w not in STOP_WORDS and len(w) > 2})
 
     sparse_sql = f"""
-    SELECT id, content_chunk, 0.0 AS distance
-    FROM {INDEX_TABLE}
-    WHERE SEARCH(content_chunk, @search_tokens)
+    SELECT id, content_chunk, hits
+    FROM (
+      SELECT id, content_chunk,
+        (SELECT COUNTIF(STRPOS(LOWER(content_chunk), kw) > 0) FROM UNNEST(@keywords) AS kw) AS hits
+      FROM {INDEX_TABLE}
+    )
+    WHERE hits > 0
+    ORDER BY hits DESC, id
     LIMIT {top_k}
     """
     job_config_sparse = bigquery.QueryJobConfig(
         query_parameters=[
-            bigquery.ScalarQueryParameter("search_tokens", "STRING", search_query_str)
+            bigquery.ArrayQueryParameter("keywords", "STRING", domain_keywords)
         ]
     )
     return bq_client.query(sparse_sql, job_config=job_config_sparse).to_dataframe()
@@ -167,7 +177,8 @@ def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
     dense_results = dense_search(get_query_embedding(user_query), top_k)
     try:
         sparse_results = keyword_search(user_query, top_k)
-    except Exception:
+    except Exception as e:
+        print(f"⚠️ Keyword search failed, using vector search only: {e}")
         sparse_results = dense_results.iloc[0:0]
 
     return "\n".join(chunk for _, chunk in fuse_rrf(dense_results, sparse_results, top_k))
