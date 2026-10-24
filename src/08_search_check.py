@@ -31,7 +31,8 @@ def search_one(question, max_k):
     dense = engine.dense_search(engine.get_query_embedding(question), max_k)
     try:
         sparse = engine.keyword_search(question, max_k)
-    except Exception:
+    except Exception as e:
+        print(f"   Keyword search failed: {e}")
         sparse = dense.iloc[0:0]
     hybrid = {k: [doc_id for doc_id, _ in engine.fuse_rrf(dense.head(k), sparse.head(k), k)] for k in CUTOFFS}
     return {"vector": list(dense["id"]), "keyword": list(sparse["id"]), "hybrid": hybrid}
