@@ -103,10 +103,8 @@ def get_query_embedding(text: str):
         return response.embeddings[0].values
 
 
-def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
-    """Executes BigQuery Hybrid Search using VECTOR_SEARCH and Lexical SEARCH."""
-    query_vector = get_query_embedding(user_query)
-
+def dense_search(query_vector, top_k: int):
+    """Semantic search: the index chunks closest in meaning to the question, closest first."""
     dense_sql = f"""
     SELECT base.id, base.content_chunk, distance
     FROM VECTOR_SEARCH(
@@ -121,8 +119,11 @@ def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
             bigquery.ArrayQueryParameter("query_vec", "FLOAT64", query_vector)
         ]
     )
-    dense_results = bq_client.query(dense_sql, job_config=job_config_dense).to_dataframe()
+    return bq_client.query(dense_sql, job_config=job_config_dense).to_dataframe()
 
+
+def keyword_search(user_query: str, top_k: int):
+    """Lexical search: index chunks containing the question's domain keywords."""
     words = re.findall(r'\w+', user_query.lower())
     domain_keywords = [w for w in words if w not in STOP_WORDS and len(w) > 1]
     search_query_str = " ".join(domain_keywords) if domain_keywords else user_query
@@ -138,12 +139,11 @@ def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
             bigquery.ScalarQueryParameter("search_tokens", "STRING", search_query_str)
         ]
     )
+    return bq_client.query(sparse_sql, job_config=job_config_sparse).to_dataframe()
 
-    try:
-        sparse_results = bq_client.query(sparse_sql, job_config=job_config_sparse).to_dataframe()
-    except Exception:
-        sparse_results = dense_results.iloc[0:0]
 
+def fuse_rrf(dense_results, sparse_results, top_k: int):
+    """Merges both result lists with Reciprocal Rank Fusion. Returns [(id, content_chunk)], best first."""
     rrf_scores = {}
     content_map = {}
     k_constant = 60
@@ -159,9 +159,18 @@ def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
         rrf_scores[doc_id] = rrf_scores.get(doc_id, 0.0) + (1.0 / (k_constant + rank + 1))
 
     sorted_docs = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    retrieved_chunks = [content_map[doc_id] for doc_id, _ in sorted_docs]
+    return [(doc_id, content_map[doc_id]) for doc_id, _ in sorted_docs]
 
-    return "\n".join(retrieved_chunks)
+
+def retrieve_governed_context(user_query: str, top_k: int = 12) -> str:
+    """Executes BigQuery Hybrid Search using VECTOR_SEARCH and Lexical SEARCH."""
+    dense_results = dense_search(get_query_embedding(user_query), top_k)
+    try:
+        sparse_results = keyword_search(user_query, top_k)
+    except Exception:
+        sparse_results = dense_results.iloc[0:0]
+
+    return "\n".join(chunk for _, chunk in fuse_rrf(dense_results, sparse_results, top_k))
 
 
 def extract_clean_sql(generated_text: str) -> str:
