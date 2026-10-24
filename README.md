@@ -180,6 +180,7 @@ Code in `src/`, benchmark inputs in `data/`, run outputs in `results/`.
 | `05_run_baseline.py` | Runs and judges the schema-only baseline |
 | `06_run_engine_evals.py` | Runs and judges the engine |
 | `07_audit_judge.py` | Re-grades verdicts with a second judge model |
+| `08_search_check.py` | Tests the search alone: does it find the tables each answer needs? |
 | `sql_guard.py` | Blocks anything that is not a read-only `SELECT` on certified tables |
 | `test_sql_guard.py` | Tests the guard: unsafe SQL is blocked, all 54 reference queries still pass |
 | `judge.py`, `eval_common.py` | Shared judge and scoring code |
@@ -192,5 +193,6 @@ python 03_build_index.py
 python text_to_sql_engine.py                    # ask questions
 python 06_run_engine_evals.py                   # Set A
 python 06_run_engine_evals.py --eval-file ../data/eval_queries_set_b.json --out ../results/set_b_engine.json
+python 08_search_check.py                       # search alone, no judge
 ```
 Needs a `.env` with Google Cloud credentials and `CLAUDE_API_KEY`.
