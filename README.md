@@ -27,7 +27,7 @@ A **Retrieval-Augmented Generation (RAG)** engine, written as a Python CLI, that
 * **Hybrid search in BigQuery:** `VECTOR_SEARCH` (meaning) plus text search (keywords), merged with Reciprocal Rank Fusion in Python. No external vector database.
 * **Self-healing:** every query gets a free BigQuery dry-run; if it fails, the error goes back to the LLM to fix.
 * **Human-in-the-loop:** queries above the scan-cost threshold (>500 MB) or below the LLM's confidence score (<0.85) pause for a person to approve, decline or edit.
-* **Guardrails:** the model only sees certified `gold_layer` and selected `silver_layer` tables. This is prompt-level steering, not a hard block; production would add database-level PII masking.
+* **Guardrails:** the model only sees certified `gold_layer` and selected `silver_layer` tables, and a hard check in code blocks any SQL that is not a single read-only `SELECT` on those datasets (no `DELETE`, `DROP` or raw tables). Blocked SQL goes back to the LLM to fix. Production would add database-level PII masking.
 
 ## 🏗️ Data Architecture
 
@@ -180,11 +180,14 @@ Code in `src/`, benchmark inputs in `data/`, run outputs in `results/`.
 | `05_run_baseline.py` | Runs and judges the schema-only baseline |
 | `06_run_engine_evals.py` | Runs and judges the engine |
 | `07_audit_judge.py` | Re-grades verdicts with a second judge model |
+| `sql_guard.py` | Blocks anything that is not a read-only `SELECT` on certified tables |
+| `test_sql_guard.py` | Tests the guard: unsafe SQL is blocked, all 54 reference queries still pass |
 | `judge.py`, `eval_common.py` | Shared judge and scoring code |
 
 ```bash
-pip install google-cloud-bigquery google-genai anthropic python-dotenv pandas scikit-learn db-dtypes pyarrow
+pip install google-cloud-bigquery google-genai anthropic python-dotenv pandas scikit-learn db-dtypes pyarrow sqlglot
 cd src
+python test_sql_guard.py                        # safety check tests, no keys needed
 python 03_build_index.py
 python text_to_sql_engine.py                    # ask questions
 python 06_run_engine_evals.py                   # Set A

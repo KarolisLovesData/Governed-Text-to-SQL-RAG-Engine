@@ -5,8 +5,9 @@ APEX Activewear - Governed Text-to-SQL RAG Engine with HITL Escalation
 2. Performs Hybrid Search in BigQuery (Dense VECTOR_SEARCH + Filtered Keyword SEARCH).
 3. Merges context chunks via Reciprocal Rank Fusion (RRF).
 4. Generates standard BigQuery SQL using Gemini 3.7 Flash.
-5. Executes $0 BigQuery Dry-Run validation + LLM Confidence Scoring.
-6. Enforces Human-in-the-Loop (HITL) escalation on cost (>500 MB) or confidence (<0.85) triggers.
+5. Blocks anything that is not a read-only SELECT on certified tables (sql_guard.py).
+6. Executes $0 BigQuery Dry-Run validation + LLM Confidence Scoring.
+7. Enforces Human-in-the-Loop (HITL) escalation on cost (>500 MB) or confidence (<0.85) triggers.
 """
 
 import os
@@ -21,6 +22,7 @@ from google import genai
 from google.cloud import bigquery
 from google.cloud.exceptions import GoogleCloudError
 from dotenv import load_dotenv
+from sql_guard import check_sql_safety
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="google.cloud.bigquery")
 # =====================================================================
@@ -314,9 +316,17 @@ def generate_governed_sql(user_query: str, max_retries: int = MAX_RETRIES) -> Op
 
         sql_query = extract_clean_sql(response.text)
 
-        if "-- ERROR" in sql_query.upper() or "SELECT" not in sql_query.upper():
+        sql_lines = [line.strip() for line in sql_query.splitlines() if line.strip()]
+        if "-- ERROR" in sql_query.upper() and all(line.startswith("--") for line in sql_lines):
             print("⚠️ Governance Guardrail Triggered: Requested attribute not found in certified schemas.")
             return sql_query
+
+        # Step 0: Hard safety check (read-only SELECT, certified tables only)
+        safety_error = check_sql_safety(sql_query)
+        if safety_error:
+            print(f"🛡️ {safety_error}")
+            feedback_context = f"GOVERNANCE VIOLATION: {safety_error}"
+            continue
 
         # Step 1: Zero-Cost BigQuery Dry-Run
         with TerminalSpinner(f"Executing BigQuery Dry-Run syntax validation..."):
