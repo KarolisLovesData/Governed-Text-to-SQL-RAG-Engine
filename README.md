@@ -55,6 +55,20 @@ A **Dataform Medallion** pipeline: 6 raw sources, silver staging views with qual
 * **The gap is real but small.** 50 questions are too few to prove it statistically.
 * **Results are stable.** Three runs of the first 35 questions gave 29, 28 and 28 correct for the engine, and 27 every time for the baseline.
 
+### 🔎 Search alone (recall@k)
+
+Before writing SQL, the engine searches its index and hands the top 30 results to the LLM. If a table the answer needs is not in there, the LLM never sees it. This test checks only that step: for how many of the 50 questions did the search find every table the answer needs?
+
+| Search method | Top 5 | Top 10 | Top 30 (what the engine uses) |
+|---|---|---|---|
+| Meaning only (vector) | 31 | 36 | 48 |
+| Keywords only | 21 | 33 | 41 |
+| **Hybrid (both)** | **30** | **37** | **49** |
+
+* **Hybrid finds the right tables for 49 of 50 questions** at the engine's setting. The one miss asks about "traffic source", which lives in an attribution table the question never names.
+* **Keywords cover what meaning-search misses.** "Share of cancelled orders by country" was found only by keywords.
+* **The test caught a real bug.** Keyword search had been returning nothing, so "hybrid" was really vector-only. It is fixed, and the table above is after the fix.
+
 <details>
 <summary><b>🔎 How I checked the results, and what is still weak (click to expand)</b></summary>
 
