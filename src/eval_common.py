@@ -115,6 +115,7 @@ def summarize(system, results, judge_model, extra=None):
     passed = sum(1 for r in evaluable if r["semantic_logic_pass"])
     lo, hi = wilson(passed, len(evaluable))
     lats = [r["latency_seconds"] for r in results if r.get("latency_seconds") is not None]
+    costs = [r["cost_usd"] for r in results if r.get("cost_usd") is not None]
     summary = {
         "system": system,
         "run_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -131,6 +132,9 @@ def summarize(system, results, judge_model, extra=None):
         "judge_errors": n - len(evaluable),
         "failure_types": dict(Counter(r["failure_type"] for r in results if r["semantic_logic_pass"] is False)),
         "avg_latency_seconds": round(sum(lats) / len(lats), 2) if lats else None,
+        "max_latency_seconds": max(lats) if lats else None,
+        "avg_cost_usd": round(sum(costs) / len(costs), 5) if costs else None,
+        "total_cost_usd": round(sum(costs), 4) if costs else None,
         "judge_usage": judge.usage_summary(),
     }
     if extra:
@@ -149,7 +153,9 @@ def print_summary(summary):
     print(f"Semantic logic match:       {s['semantic_logic_match_pct']}%  ({s['semantic_pass']}/{s['semantic_evaluated']}, "
           f"95% CI {s['semantic_wilson95_pct'][0]}-{s['semantic_wilson95_pct'][1]}%)")
     print(f"Failure categories:         {s['failure_types'] or 'none'}")
-    print(f"Avg generation latency:     {s['avg_latency_seconds']}s")
+    print(f"Avg generation latency:     {s['avg_latency_seconds']}s  (slowest {s['max_latency_seconds']}s)")
+    if s["avg_cost_usd"] is not None:
+        print(f"Cost per answer:            ${s['avg_cost_usd']:.4f}  (whole run ${s['total_cost_usd']:.2f}, judge not included)")
     if s["judge_errors"]:
         print(f"WARNING: {s['judge_errors']} judge ERROR(s) excluded from the semantic score. Re-run those ids with --ids.")
     u = s["judge_usage"]

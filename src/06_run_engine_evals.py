@@ -38,6 +38,7 @@ def run_evaluation_suite(args):
     results = []
     for case in cases:
         _escalations.clear()
+        engine.reset_usage()
         print(f"[{case['id']}] {case['question'][:70]}...")
 
         gen_sql, gen_error, latency = None, None, None
@@ -49,12 +50,14 @@ def run_evaluation_suite(args):
             gen_error = str(e)
             print(f"   Engine error: {e}")
 
-        is_valid, dry_err = False, gen_error
+        is_valid, dry_err, answer_bytes = False, gen_error, 0
         if gen_sql:
             try:
-                is_valid, dry_err, _ = engine.validate_sql_dry_run(gen_sql)
+                is_valid, dry_err, answer_bytes = engine.validate_sql_dry_run(gen_sql)
             except Exception as e:
                 is_valid, dry_err = False, str(e)
+        usage = dict(engine.USAGE)
+        usage["bigquery_bytes"] += answer_bytes or 0  # running the final SQL once to get the answer
         print(f"   Dry-run: {'PASSED' if is_valid else 'FAILED'}")
 
         grade = ec.grade_case(case, gen_sql, is_valid, args.judge_model)
@@ -68,6 +71,8 @@ def run_evaluation_suite(args):
             "golden_sql": case["golden_sql"],
             "generated_sql": gen_sql,
             "latency_seconds": latency,
+            "usage": usage,
+            "cost_usd": round(engine.usage_cost_usd(usage), 6),
             "dry_run_pass": is_valid,
             "dry_run_error": None if is_valid else dry_err,
             "escalated": bool(_escalations),
