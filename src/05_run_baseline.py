@@ -14,6 +14,7 @@ import time
 
 import pandas as pd
 
+import text_to_sql_engine as engine
 from text_to_sql_engine import LLM_MODEL, ai_client, validate_sql_dry_run
 import eval_common as ec
 
@@ -36,6 +37,7 @@ def naive_generate_sql(question: str) -> str:
     """
 
     response = ai_client.models.generate_content(model=LLM_MODEL, contents=prompt)
+    engine._count_gemini(response)
     text = response.text or ""
 
     # Extract the SQL
@@ -54,6 +56,7 @@ def run_baseline_suite(args):
     for case in cases:
         print(f"[{case['id']}] {case['question'][:70]}...")
 
+        engine.reset_usage()
         gen_sql, gen_error, latency = None, None, None
         start = time.time()
         try:
@@ -64,12 +67,14 @@ def run_baseline_suite(args):
             gen_error = str(e)
             print(f"   Generation error: {e}")
 
-        is_valid, dry_err = False, gen_error
+        is_valid, dry_err, answer_bytes = False, gen_error, 0
         if gen_sql:
             try:
-                is_valid, dry_err, _ = validate_sql_dry_run(gen_sql)
+                is_valid, dry_err, answer_bytes = validate_sql_dry_run(gen_sql)
             except Exception as e:
                 is_valid, dry_err = False, str(e)
+        usage = dict(engine.USAGE)
+        usage["bigquery_bytes"] += answer_bytes or 0  # running the final SQL once to get the answer
         print(f"   Dry-run: {'PASSED' if is_valid else 'FAILED'}")
 
         grade = ec.grade_case(case, gen_sql, is_valid, args.judge_model)
@@ -83,6 +88,8 @@ def run_baseline_suite(args):
             "golden_sql": case["golden_sql"],
             "generated_sql": gen_sql,
             "latency_seconds": latency,
+            "usage": usage,
+            "cost_usd": round(engine.usage_cost_usd(usage), 6),
             "dry_run_pass": is_valid,
             "dry_run_error": None if is_valid else dry_err,
             **grade,
