@@ -28,6 +28,7 @@ A **Retrieval-Augmented Generation (RAG)** engine, written as a Python CLI, that
 * **Self-healing:** every query gets a free BigQuery dry-run; if it fails, the error goes back to the LLM to fix.
 * **Human-in-the-loop:** queries above the scan-cost threshold (>500 MB) or below the LLM's confidence score (<0.85) pause for a person to approve, decline or edit.
 * **Guardrails:** the model only sees certified `gold_layer` and selected `silver_layer` tables, and a hard check in code blocks any SQL that is not a single read-only `SELECT` on those datasets (no `DELETE`, `DROP` or raw tables). Blocked SQL goes back to the LLM to fix. Production would add database-level PII masking.
+* * **Path to production (not deployed):** the engine would run as a managed service (Cloud Run, or an ADK agent on Agent Runtime) under its own service account with read-only access (`BigQuery Data Viewer`) to the `gold_layer` and `silver_layer` datasets plus `BigQuery Job User`, with API keys in Secret Manager. The human-in-the-loop step would move from the CLI prompt to an approval queue, and traces would feed monitoring.
 
 ## 🏗️ Data Architecture
 
