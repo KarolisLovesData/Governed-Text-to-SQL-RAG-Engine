@@ -56,8 +56,8 @@ ai_client = genai.Client(api_key=api_key)
 # =====================================================================
 # List prices in US dollars. Check them against https://ai.google.dev/gemini-api/docs/pricing
 # and https://cloud.google.com/bigquery/pricing before quoting numbers.
-GEMINI_INPUT_PER_1M = 0.50     # LLM_MODEL, per 1M input tokens
-GEMINI_OUTPUT_PER_1M = 3.00    # LLM_MODEL, per 1M output tokens (thinking tokens are billed as output)
+GEMINI_INPUT_PER_1M = 0.75     # LLM_MODEL, per 1M input tokens (paid tier through 2026; $1.50 from Jan 2027)
+GEMINI_OUTPUT_PER_1M = 3.75    # LLM_MODEL, per 1M output tokens incl. thinking ($7.50 from Jan 2027)
 EMBEDDING_PER_1M = 0.15        # EMBEDDING_MODEL, per 1M input tokens
 BIGQUERY_PER_TIB = 6.25        # on-demand price per TiB scanned
 
