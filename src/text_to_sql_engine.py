@@ -17,7 +17,8 @@ import time
 import threading
 import itertools
 from typing import Optional, Tuple
-
+import google.auth
+from google.auth import impersonated_credentials
 from google import genai
 from google.cloud import bigquery
 from google.cloud.exceptions import GoogleCloudError
@@ -37,6 +38,7 @@ ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH)
 
 PROJECT_ID = "apex-activewear"
+READONLY_SA = os.getenv("BQ_READONLY_SA", f"text-to-sql-readonly@{PROJECT_ID}.iam.gserviceaccount.com")
 DATASET_ID = "gold_layer"
 LOCATION = "US"
 
@@ -50,7 +52,21 @@ if not api_key:
 
 bq_client = bigquery.Client(project=PROJECT_ID, location=LOCATION)
 ai_client = genai.Client(api_key=api_key)
+def get_readonly_bq_client():
+    source, _ = google.auth.default()
+    creds = impersonated_credentials.Credentials(
+        source_credentials=source,
+        target_principal=READONLY_SA,
+        target_scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+    return bigquery.Client(
+        project=PROJECT_ID,
+        credentials=creds,
+        location=LOCATION,
+    )
 
+bq_client = get_readonly_bq_client()
+ai_client = genai.Client(api_key=api_key)
 # =====================================================================
 # COST TRACKING (what one answer costs)
 # =====================================================================
