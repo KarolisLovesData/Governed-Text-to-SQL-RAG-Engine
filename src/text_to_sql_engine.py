@@ -37,7 +37,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 load_dotenv(dotenv_path=ENV_PATH)
 
-PROJECT_ID = "apex-activewear"
+PROJECT_ID = os.getenv("PROJECT_ID")
 READONLY_SA = os.getenv("BQ_READONLY_SA", f"text-to-sql-readonly@{PROJECT_ID}.iam.gserviceaccount.com")
 DATASET_ID = "gold_layer"
 LOCATION = "US"
